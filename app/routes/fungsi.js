@@ -6,5 +6,7 @@ const FungsiController           = require('../controllers/Fungsi.controller')
 router
     .all('/*', authentication)
     .get('/', FungsiController.getFungsiController)
+    .get('/:ID', FungsiController.getFungsiByIDController)
+    .post('/crud', FungsiController.postFungsiController)
 
 module.exports = router

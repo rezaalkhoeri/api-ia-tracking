@@ -5,6 +5,8 @@ const UserController            = require('../controllers/users.controller')
 
 router
     .all('/*', authentication)
-    .get('/', UserController.getUserDetail)
+    .get('/detailUser', UserController.getUserDetail)
+    .get('/', UserController.getUsersDataController)
+    .post('/crud', UserController.insertUsersDataController)
 
 module.exports = router

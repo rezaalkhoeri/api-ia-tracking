@@ -176,4 +176,117 @@ UsersController.getUserDetail = async (req, res, next) => {
     }
 }
 
+UsersController.getUsersDataController = async(req, res, next) => {
+    console.log(`├── ${log} :: Get Users Data Controller`);
+
+    try{
+        let sql = await UsersModel.getAll('*', []);
+
+        // success
+        res.status(200).send(
+            parseResponse(true, sql, '00', 'Get Users Data Controller Success')
+        )
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+UsersController.insertUsersDataController = async(req, res, next) => {
+    console.log(`├── ${log} :: Insert Users Data Controller`);
+
+    try {        
+        let { action, password, name, nopek, jabatan, perusahaan, email, role } = req.body
+
+        if (action == 'create') {
+            let max = await UsersModel.QueryCustom('SELECT MAX(UserID) AS max_id FROM user');
+
+            if (max.count > 1) {
+                let value =  max.rows[0].max_id;
+                let number = value.substr(1,7)
+                let angka = parseInt(number)
+                let n = angka + 1
+
+                let output = [], padded;
+                for (i=n; i<=n; i++) {
+                    padded = ('00000'+i).slice(-10);
+                    output.push(padded);
+                }  
+
+                let userId = 'U'+output
+                let pwdEncrypt = await encryptPassword(password);
+
+                let data = [
+                    {key : 'UserID', value : userId},
+                    {key : 'Password', value : pwdEncrypt},
+                    {key : 'Name', value : name},
+                    {key : 'Nopek', value : nopek},
+                    {key : 'Jabatan', value : jabatan},
+                    {key : 'Perusahaan', value : perusahaan},
+                    {key : 'Email', value : email},
+                    {key : 'Role', value : role},
+                    {key : 'StatusUser', value : '1'},
+                ]
+
+                let insert =  await UsersModel.save(data);
+                if (insert.success == true) {
+                    res.status(200).send(
+                        parseResponse(true, data, '00', 'Insert Users Data Controller Success')
+                    )
+                }        
+            } else {
+                let userId = 'U000001'
+                let pwdEncrypt = await encryptPassword(password);
+
+                let data = [
+                    {key : 'UserID', value : userId},
+                    {key : 'Password', value : pwdEncrypt},
+                    {key : 'Name', value : name},
+                    {key : 'Nopek', value : nopek},
+                    {key : 'Jabatan', value : jabatan},
+                    {key : 'Perusahaan', value : perusahaan},
+                    {key : 'Email', value : email},
+                    {key : 'Role', value : role},
+                    {key : 'StatusUser', value : '1'},
+                ]
+
+                let insert =  await UsersModel.save(data);
+                if (insert.success == true) {
+                    res.status(200).send(
+                        parseResponse(true, data, '00', 'Insert Users Data Controller Success')
+                    )
+                }
+            }
+        } else if (action == 'update') {
+            // Belum
+        } else if (action == 'delete') {
+            // Belum
+        } else {
+            statusCode      = 200
+            responseCode    = '05'
+            message         = 'Request Not Found'
+            acknowledge     = false
+            result          = null
+            
+            // return response
+            res.status(statusCode).send(
+                parseResponse(acknowledge, result, responseCode, message)
+            )
+        }
+
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+
 module.exports = UsersController
