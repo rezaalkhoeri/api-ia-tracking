@@ -18,6 +18,7 @@ const app           = express()
 const swaggerUi     = require('swagger-ui-express')
 const YAML          = require('yamljs')
 const usersSwagger  = YAML.load(process.cwd() + '/app/apidocs-documents/users.yaml')
+const fileUpload    = require('express-fileupload');
 
 const expiredTime   = 7*24*60*60*1000; //7 hari
 
@@ -53,6 +54,9 @@ app.use(cors())
 // disable header for security issue
 app.disable('X-Powered-By')
 app.disable('x-powered-by')
+
+// enable files upload
+app.use(fileUpload());
 
 //enable read body parser json and url encoded
 app.use(bodyParser.json())

@@ -7,6 +7,7 @@ router
     .all('/*', authentication)
     .get('/detailUser', UserController.getUserDetail)
     .get('/', UserController.getUsersDataController)
-    .post('/crud', UserController.insertUsersDataController)
+    .get('/:ID', UserController.getUsersDataByIDController)
+    .post('/crud', UserController.createUpdateUsersDataController)
 
 module.exports = router

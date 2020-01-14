@@ -196,8 +196,32 @@ UsersController.getUsersDataController = async(req, res, next) => {
     }
 }
 
-UsersController.insertUsersDataController = async(req, res, next) => {
-    console.log(`├── ${log} :: Insert Users Data Controller`);
+UsersController.getUsersDataByIDController = async(req, res, next) => {
+    console.log(`├── ${log} :: Get Users Data By ID Controller`);
+
+    try{
+        let id = req.params.ID
+        let where = [{ key: 'ID', value: id }]
+
+        let sql = await UsersModel.getAll('*', where)
+
+        // success
+        res.status(200).send(
+            parseResponse(true, sql, '00', 'Get Users By ID Controller Success')
+        )
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+
+UsersController.createUpdateUsersDataController = async(req, res, next) => {
+    console.log(`├── ${log} :: Create Update Users Data Controller`);
 
     try {        
         let { action, password, name, nopek, jabatan, perusahaan, email, role } = req.body
@@ -262,9 +286,24 @@ UsersController.insertUsersDataController = async(req, res, next) => {
                 }
             }
         } else if (action == 'update') {
-            // Belum
-        } else if (action == 'delete') {
-            // Belum
+            let id = req.body.id
+            let where = [{key:'ID',value:id}]
+            let data = [
+                {key : 'Name', value : name},
+                {key : 'Nopek', value : nopek},
+                {key : 'Jabatan', value : jabatan},
+                {key : 'Perusahaan', value : perusahaan},
+                {key : 'Email', value : email},
+                {key : 'Role', value : role},
+                {key : 'StatusUser', value : '1'},
+            ]
+
+            let update =  await UsersModel.save(data, where)
+            if (update.success == true) {
+                res.status(200).send(
+                    parseResponse(true, data, '00', 'Update Users Data Controller Success')
+                )
+            }
         } else {
             statusCode      = 200
             responseCode    = '05'
