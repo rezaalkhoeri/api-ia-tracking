@@ -6,5 +6,6 @@ const CreateLHAController       = require('../controllers/createLHA.controller')
 router
     .all('/*', authentication)
     .post('/', CreateLHAController.createLHAController)
+    .post('/addRekomendasi', CreateLHAController.AddRekomendasiController)
 
 module.exports = router

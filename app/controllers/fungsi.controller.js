@@ -54,17 +54,37 @@ FungsiController.postFungsiController = async(req, res, next) => {
         let { action, namaFungsi } = req.body
 
         if (action == "create") {
-            let data = [
-                {key : 'NamaFungsi', value : namaFungsi},
-            ]
+
+            let condition = [{ key:'NamaFungsi', value:namaFungsi }]
+            let checkFungsi = await FungsiModel.getAll('*',condition)
             
-            let insert =  await FungsiModel.save(data);
-    
-            if (insert.success == true) {
-                res.status(200).send(
-                    parseResponse(true, data, '00', 'Insert Fungsi Data Controller Success')
-                )
-            }                
+            if (checkFungsi.length > 0) {
+                // Fungsi already exists
+                statusCode      = 200
+                responseCode    = '44'
+                message         = 'Fungsi already exists !'
+                acknowledge     = false
+                result          = null
+            } else {
+                let data = [
+                    {key : 'NamaFungsi', value : namaFungsi},
+                ]
+                
+                let insert =  await FungsiModel.save(data);
+        
+                if (insert.success == true) {
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Insert Fungsi Data Controller Success'
+                    acknowledge     = true
+                    result          = data    
+                }
+            }
+
+            res.status(statusCode).send(
+                parseResponse(acknowledge, result, responseCode, message)
+            )
+
         } else if (action == "update") {
             let { id } = req.body 
             let where = [{key:'ID_FUNGSI', value:id}]
@@ -77,18 +97,6 @@ FungsiController.postFungsiController = async(req, res, next) => {
             if (update.success == true) {
                 res.status(200).send(
                     parseResponse(true, data, '00', 'Update Fungsi Data Controller Success')
-                )
-            }                
-
-        } else if (action == "delete") {
-            let { id } = req.body 
-            let where = [{key:'ID_FUNGSI', value:id}]
-            let data = await FungsiModel.getBy('*', where)
-            let destroy =  await FungsiModel.delete(where)   
-            
-            if (destroy.success == true) {
-                res.status(200).send(
-                    parseResponse(true, data, '00', 'Delete Fungsi Data Controller Success')
                 )
             }                
 

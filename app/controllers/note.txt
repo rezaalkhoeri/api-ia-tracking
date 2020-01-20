@@ -1,0 +1,107 @@
+               let whereTemuan = [{ key:'ID_LHA', value: idLHA }]
+                let getTemuan = await TemuanModel.getAll('*', whereTemuan)
+
+                let getRekomendasi = JSON.parse(rekomendasi)
+                let whereRekomendasi = []
+                let dataRekomendasi = []
+                for (let y = 0; y < getTemuan.length; y++) {
+                    for (let i = 0; i < getRekomendasi.length; i++) {
+                        dataRekomendasi.push([
+                            { key: 'ID_TEMUAN', value: getTemuan[y].ID_TEMUAN},               
+                            { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi},
+                            { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL},
+                            { key: 'DueDate', value: getRekomendasi[i].dueDate},
+                            { key: 'CloseDate', value: getRekomendasi[i].closeDate},
+                            { key: 'CreatedBy', value: getRekomendasi[i].createdBy},
+                        ])
+                    }
+
+                    whereRekomendasi.push([
+                        { key: 'ID_TEMUAN', value: getTemuan[y].ID_TEMUAN},
+                    ])
+                }
+                
+                let rekomendasiRes = []                
+                for (let z = 0; z < dataRekomendasi.length; z++) {
+                    let insertRekomendasi =  await RekomendasiModel.save(dataRekomendasi[z]);  
+                    rekomendasiRes.push(insertRekomendasi.success)
+                }
+
+                var rekomendasiSave = rekomendasiRes.every(myFunction);
+                function myFunction(value) {
+                    return value == true;
+                }
+                
+                if (rekomendasiSave == true) {
+
+                    let rekomendasiByIdTemuan = []
+                    for (let a = 0; a < whereRekomendasi.length; a++) {
+                        let rekomendasi =  await RekomendasiModel.getAll('*', whereRekomendasi[a]);  
+                        rekomendasiByIdTemuan.push(rekomendasi)
+                    }
+
+                    let fungsi = JSON.parse(picFungsi)
+                    let dataPIC = []
+                    for (let i = 0; i < rekomendasiByIdTemuan.length; i++) {
+                        for (let k = 0; k < fungsi.length; k++) {
+                            dataPIC.push([
+                                { key:'ID_REKOMENDASI', value: rekomendasiByIdTemuan[i].ID_REKOMENDASI },
+                                { key:'ID_FUNGSI', value: fungsi[i].idFungsi}
+                            ])
+                        }                            
+                    }
+                    
+                    res.status(200).send(
+                        parseResponse(true, dataPIC, '00', 'Create LHA Controller Success')
+                    )                                               
+
+                    let postData = [
+                        { key: 'Data LHA', value:dataLHA }, 
+                        { key: 'Data Temuan', value:dataTemuan }, 
+                        { key: 'Data Rekomendasi', value:dataRekomendasi } 
+                    ]
+                    res.status(200).send(
+                        parseResponse(true, postData, '00', 'Create LHA Controller Success')
+                    )                                               
+                }
+
+
+
+
+
+
+
+
+
+
+
+[{ "idTemuan":"1", "judulRekomendasi":"Judul Rek 1", "buktiTL":"Bukti TL 1", "dueDate":"12-1-2020", "closeDate":"23-1-2020" }, { "idTemuan":"1", "judulRekomendasi":"Judul Rek 2", "buktiTL":"Bukti TL 2", "dueDate":"12-1-2020", "closeDate":"23-1-2020" },{ "idTemuan":"2", "judulRekomendasi":"Judul Rek 3", "buktiTL":"Bukti TL 1", "dueDate":"12-1-2020", "closeDate":"23-1-2020"}]
+
+
+  { 
+    "idTemuan":"2",
+    "judulRekomendasi":"Judul Rek 4",
+    "buktiTL":"Bukti TL 1",
+    "dueDate":"12-1-2020",
+    "closeDate":"23-1-2020"
+  },
+  { 
+    "idTemuan":"2",
+    "judulRekomendasi":"Judul Rek 5",
+    "buktiTL":"Bukti TL 1",
+    "dueDate":"12-1-2020",
+    "closeDate":"23-1-2020"
+  }
+
+
+
+
+
+
+  SELECT 
+tblt_lha.ID_LHA as LHA, tblt_lha.*, 
+COUNT(tblt_temuan.ID_LHA) Temuan 
+FROM tblt_lha 
+JOIN tblt_temuan ON tblt_lha.ID_LHA = tblt_temuan.ID_LHA 
+GROUP BY LHA DESC
+HAVING COUNT(LHA) > 0

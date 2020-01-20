@@ -54,20 +54,39 @@ PICController.postPICController = async(req, res, next) => {
         let { action, idFungsi, accountType, emailPekerja } = req.body
 
         if (action == "create") {
-            let data = [
-                {key : 'ID_FUNGSI', value : idFungsi},
-                {key : 'AccountTipe', value : accountType},
-                {key : 'EmailPekerja', value : emailPekerja},
-                {key : 'Status', value : '1'},
-            ]
+
+            let condition = [{ key:'EmailPekerja', value:emailPekerja }]
+            let checkEmail = await PICModel.getAll('*',condition)
             
-            let insert =  await PICModel.save(data);
-    
-            if (insert.success == true) {
-                res.status(200).send(
-                    parseResponse(true, data, '00', 'Insert PIC Data Controller Success')
-                )
-            }                
+            if (checkEmail.length > 0) {
+                // Email already exists
+                statusCode      = 200
+                responseCode    = '44'
+                message         = 'Email already exists !'
+                acknowledge     = false
+                result          = null
+            } else {
+                let data = [
+                    {key : 'ID_FUNGSI', value : idFungsi},
+                    {key : 'AccountTipe', value : accountType},
+                    {key : 'EmailPekerja', value : emailPekerja},
+                    {key : 'Status', value : '1'},
+                ]
+                
+                let insert =  await PICModel.save(data);
+        
+                if (insert.success == true) {
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Insert PIC Data Controller Success'
+                    acknowledge     = true
+                    result          = data
+                }                
+            }
+
+            res.status(statusCode).send(
+                parseResponse(acknowledge, result, responseCode, message)
+            )
         } else if (action == "update") {
             let { id, status } = req.body 
             let where = [{key:'ID', value:id}]

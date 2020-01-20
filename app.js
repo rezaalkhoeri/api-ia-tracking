@@ -56,7 +56,11 @@ app.disable('X-Powered-By')
 app.disable('x-powered-by')
 
 // enable files upload
-app.use(fileUpload());
+app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 },
+    useTempFiles : true,
+    tempFileDir : '/tmp/'
+}));
 
 //enable read body parser json and url encoded
 app.use(bodyParser.json())
