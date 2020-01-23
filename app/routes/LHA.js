@@ -5,8 +5,9 @@ const LHAController       = require('../controllers/LHA.controller')
 
 router
     .all('/*', authentication)
-    .get('/', LHAController.getLHAController)
-    .post('/temuan', LHAController.getTemuanController)
+    .post('/', LHAController.getLHAController)
+    .post('/getByID', LHAController.getLHAbyIDController)
+    .post('/temuanRekomendasi', LHAController.getTemuanController)
     // .post('/rekomendasi', LHAController.getRekomendasiController)
     .post('/search', LHAController.searchLHAController)
 

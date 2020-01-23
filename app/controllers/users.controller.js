@@ -306,7 +306,7 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
             }
         } else {
             statusCode      = 200
-            responseCode    = '05'
+            responseCode    = '404'
             message         = 'Request Not Found'
             acknowledge     = false
             result          = null

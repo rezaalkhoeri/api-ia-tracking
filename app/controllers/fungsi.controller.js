@@ -106,7 +106,7 @@ FungsiController.postFungsiController = async(req, res, next) => {
                 {key:'data', value:'Request Not Found'}
             ]
             res.status(200).send(
-                parseResponse(true, data, '00', 'Request Not Found')
+                parseResponse(true, data, '404', 'Request Not Found')
             )
         }
 
