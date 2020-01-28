@@ -8,7 +8,9 @@ router
     .post('/', LHAController.getLHAController)
     .post('/getByID', LHAController.getLHAbyIDController)
     .post('/temuanRekomendasi', LHAController.getTemuanController)
-    // .post('/rekomendasi', LHAController.getRekomendasiController)
+    .post('/getTemuanByID', LHAController.getTemuanbyIDController)
+    .post('/getRekomendasiByID', LHAController.getRekomendasibyIDController)
+    .post('/rekomendasi', LHAController.getRekomendasiController)
     .post('/search', LHAController.searchLHAController)
 
 module.exports = router
