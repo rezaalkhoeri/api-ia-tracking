@@ -14,7 +14,7 @@ TLController.auditeeTLController = async(req, res, next) => {
         let { action, idRF } = req.body
 
         if (action == 'create') {
-            let { judulRekomendasi, catatanAuditee, createdBy } = req.body
+            let { catatanAuditee, createdBy } = req.body
 
             if (!req.files || Object.keys(req.files).length === 0) {
                 statusCode      = 200
@@ -38,7 +38,7 @@ TLController.auditeeTLController = async(req, res, next) => {
     
                 let dataTL = [
                     { key:'ID_RF', value:idRF},
-                    { key:'DokumenTL', value: 'TL_'+judulRekomendasi+'_'+sampleFile.name },
+                    { key:'DokumenTL', value: sampleFile.name },
                     { key:'CatatanAudit', value:catatanAuditee},
                     { key:'StatusTL', value:'A0'},
                     { key:'CreatedBy', value:createdBy}
