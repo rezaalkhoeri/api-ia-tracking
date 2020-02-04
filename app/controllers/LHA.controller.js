@@ -3,6 +3,7 @@ const LHAModel              = require('../models/lha.model');
 const TemuanModel                 = require('../models/temuan.model');
 const RekomendasiModel            = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel      = require('../models/fungsi_rekomendasi.model');
+const TLModel                       = require('../models/TL.model');
 const parseResponse         = require('../helpers/parse-response')
 const log                   = 'LHA controller';
 
@@ -75,11 +76,35 @@ LHAController.getTemuanController = async(req, res, next) => {
         }
 
         let result = []
-        for (let x = 0; x < whereTemuan.length; x++) {            
+        for (let x = 0; x < whereTemuan.length; x++) {   
+            dataTemuan = await TemuanModel.getAll('*', whereTemuan[x])            
+            dataRekomendasi = await RekomendasiModel.getAll('*', whereTemuan[x])
+
+            let pic = []
+            for (let i = 0; i < dataRekomendasi.length; i++) {
+                wherePIC = dataRekomendasi[i].ID_REKOMENDASI
+                sql = `SELECT tblt_rekomendasi.ID_REKOMENDASI, tblm_fungsi.* FROM tblt_rekomendasi 
+                        LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
+                        LEFT JOIN tblm_fungsi ON tblt_rekomendasi_fungsi.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
+                        WHERE tblt_rekomendasi.ID_REKOMENDASI =`+wherePIC
+                dataPIC = await FungsiRekomendasiModel.QueryCustom(sql)
+                pic.push(dataPIC.rows)
+            }
+
+            let tindakLanjut = []
+            for (let i = 0; i < dataRekomendasi.length; i++) {
+                whereIDRF = dataRekomendasi[i].ID_REKOMENDASI
+                sql = `SELECT * FROM tblt_rekomendasi_tindaklanjut WHERE tblt_rekomendasi_tindaklanjut.ID_RF =`+whereIDRF
+                dataTL = await TLModel.QueryCustom(sql)
+                tindakLanjut.push(dataTL.rows)
+            }
+
             result.push([{
-                temuan : await TemuanModel.getAll('*', whereTemuan[x]),
-                rekomendasi : await RekomendasiModel.getAll('*', whereTemuan[x])
-            }])
+                temuan : dataTemuan,
+                rekomendasi : dataRekomendasi,
+                pic : pic,
+                TL : tindakLanjut
+            }])            
         }
 
         // success

@@ -6,5 +6,7 @@ const TLController              = require('../controllers/tindak_lanjut.controll
 router
     .all('/*', authentication)
     .post('/auditee', TLController.auditeeTLController)
+    .post('/getTLbyRekomendasi', TLController.getTLByRekomendasiController)
+    .post('/closeRekomendasi', TLController.closeRekomendasiController)
 
 module.exports = router

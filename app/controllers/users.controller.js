@@ -151,11 +151,16 @@ UsersController.login = async(req, res, next) => {
         )
     } catch (error) {
         console.log('Error exception :' + error)
-        let resp = parseResponse(false, null, '99', error)
-        next({
-            resp,
-            status: 500
-        })
+
+        res.status(200).send(
+            parseResponse(false, null, '500', error)
+        )
+
+        // let resp = parseResponse(false, null, '500', error)
+        // next({
+        //     resp,
+        //     status: 200
+        // })
     }
 }
 
