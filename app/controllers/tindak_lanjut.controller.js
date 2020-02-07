@@ -6,6 +6,7 @@ const RekomendasiModel              = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel        = require('../models/fungsi_rekomendasi.model');
 const date                          = require('date-and-time');
 const now                           = new Date();
+const moment                        = require('moment');
 const parseResponse                 = require('../helpers/parse-response')
 const log                           = 'TL controller';
 
@@ -210,7 +211,8 @@ TLController.closeRekomendasiController = async(req, res, next) => {
             ]
 
             let dataRek = [
-                {key:'StatusTL', value:'A3'}
+                {key:'StatusTL', value:'A3'},
+                {key:'CloseDueDate', value: date.format(now, 'YYYY-MM-DD')},
             ]
 
             let closeTL = await TLModel.save(dataTL, TLcondition)
@@ -276,6 +278,70 @@ TLController.closeRekomendasiController = async(req, res, next) => {
             )
         }
         
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+
+TLController.rejectTLRekomendasiController = async(req, res, next) => {
+    console.log(`├── ${log} :: Reject TL Rekomendasi Controller`);
+
+    try{
+        let {idRekomendasi, catatanAuditor, createdBy} = req.body
+        let dataTL = [
+            {key:'CatatanFungsi', value:catatanAuditor},
+            {key:'StatusTL', value:'A4'},
+            {key:'AuditorBy', value:createdBy}            
+        ]
+        let whereTL = [{key:'ID_RF', value: idRekomendasi}]
+        let saveTL = await TLModel.save(dataTL, whereTL);
+
+        if (saveTL.success == true) {
+            let whereRekomendasi = [{key:'ID_REKOMENDASI', value: idRekomendasi}]
+            let statusRek = [{key:'StatusTL',value:'A4'}]
+            let saveStatusRek = await RekomendasiModel.save(statusRek, whereRekomendasi)
+
+            if (saveStatusRek.success == true) {
+                // return response
+                res.status(200).send(
+                    parseResponse(true, dataTL, 00, 'Reject TL Rekomendasi Controller Success')
+                )                
+            }
+        }
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+
+TLController.perpanjangDueDateController = async(req, res, next) => {
+    console.log(`├── ${log} :: Perpanjang Due Date Rekomendasi Controller`);
+
+    try{
+        let {idRekomendasi,dueDate} = req.body
+
+        let dataTL = [
+            {key:'DueDate', value: moment(dueDate).format('YYYY-MM-DD')}
+        ]
+        let whereRekomendasi = [{key:'ID_REKOMENDASI', value: idRekomendasi}]
+        let saveTL = await RekomendasiModel.save(dataTL, whereRekomendasi);
+
+        if (saveTL.success == true) {
+            res.status(200).send(
+                parseResponse(true, dataTL, 00, 'Perpanjang Due Date Rekomendasi Controller Success')
+            )                
+        }
     } catch(error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)

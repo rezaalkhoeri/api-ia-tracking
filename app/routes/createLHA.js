@@ -7,5 +7,6 @@ router
     .all('/*', authentication)
     .post('/', CreateLHAController.createLHAController)
     .post('/addRekomendasi', CreateLHAController.AddRekomendasiController)
+    .post('/submit', CreateLHAController.SubmitController)
 
 module.exports = router

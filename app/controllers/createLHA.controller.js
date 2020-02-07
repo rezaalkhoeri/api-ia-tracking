@@ -420,6 +420,82 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
     }
 }
 
+CreateLHAController.SubmitController = async(req, res, next) => {
+    console.log(`├── ${log} :: Create LHA Data Controller`);
+
+    try {
+        let { idLHA } = req.body
+        let whereLHA = [{key:'ID_LHA', value: idLHA}]
+        let getLHA = await LHAModel.getAll('*', whereLHA)
+    
+        if (getLHA.length > 0) {
+            let statusLHA = [{key:'StatusLHA', value:'A1'}]
+            let submitLHA = await LHAModel.save(statusLHA, whereLHA)
+    
+            if (submitLHA.success == true) {
+                getTemuan = await TemuanModel.getAll('*', whereLHA)
+
+                if (getTemuan.length > 0) {
+                    statusTemuan = [{key:'StatusTemuan', value:'A1'}]
+    
+                    resultTemuan = []
+                    for (let i = 0; i < getTemuan.length; i++) {
+                        let submitTemuan = await TemuanModel.save(statusTemuan, whereLHA)
+                        resultTemuan.push(submitTemuan.success)
+                    }
+    
+                    let temuanSubmit = resultTemuan.every(myFunction);
+                    function myFunction(value) {
+                        return value == true;
+                    }
+    
+                    if (temuanSubmit == true) {
+
+                        dataRekomendasi = []
+                        for (let x = 0; x < getTemuan.length; x++) {
+                            whereTemuan = [{key:'ID_TEMUAN', value : getTemuan[x].ID_TEMUAN}]
+                            let getRekomendasi = await RekomendasiModel.getAll('*', whereTemuan)
+
+                            dataRekomendasi.push(getRekomendasi)
+                        }
+
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Submit LHA Fungsi Controller'
+                        acknowledge     = true
+                        result          = dataRekomendasi
+
+                    } 
+                } else {
+                    statusCode      = 200
+                    responseCode    = '44'
+                    message         = 'Temuan Not Found'
+                    acknowledge     = false
+                    result          = null
+                }
+            }
+    
+        } else {
+            statusCode      = 200
+            responseCode    = '44'
+            message         = 'LHA Not Found'
+            acknowledge     = false
+            result          = null                    
+        }
+
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
 
 
 module.exports = CreateLHAController

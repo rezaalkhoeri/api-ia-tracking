@@ -1,11 +1,13 @@
-const LHAController         = {}
-const LHAModel              = require('../models/lha.model');
-const TemuanModel                 = require('../models/temuan.model');
-const RekomendasiModel            = require('../models/rekomendasi.model');
-const FungsiRekomendasiModel      = require('../models/fungsi_rekomendasi.model');
-const TLModel                       = require('../models/TL.model');
-const parseResponse         = require('../helpers/parse-response')
-const log                   = 'LHA controller';
+const LHAController             = {}
+const LHAModel                  = require('../models/lha.model');
+const TemuanModel               = require('../models/temuan.model');
+const RekomendasiModel          = require('../models/rekomendasi.model');
+const FungsiRekomendasiModel    = require('../models/fungsi_rekomendasi.model');
+const TLModel                   = require('../models/TL.model');
+const _                         = require('lodash');
+const moment                    = require('moment');
+const parseResponse             = require('../helpers/parse-response')
+const log                       = 'LHA controller';
 
 LHAController.getLHAController = async(req, res, next) => {
     console.log(`├── ${log} :: Get LHA Controller`);
@@ -14,17 +16,44 @@ LHAController.getLHAController = async(req, res, next) => {
         let {status} = req.body
 
         if (status == 'all') {
-            let dbLHA = await LHAModel.QueryCustom('CALL SP_VIEW_ALL_DATA');
+            let dbLHA = await LHAModel.QueryCustom('CALL SP_VIEW_ALL_DATA');           
+            let obj = dbLHA.rows[0]
+            result = _.map(obj, function(data){     
+                return dataLHA = {
+                    ID_LHA              : data.ID_LHA,
+                    NomorLHA            : data.NomorLHA,
+                    JudulLHA            : data.JudulLHA,
+                    TanggalLHA          : moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA             : data.TipeLHA,
+                    StatusLHA           : data.StatusLHA,
+                    TotalTemuan         : data.TotalTemuan,
+                    TotalRekomendasi    : data.TotalRekomendasi
+                }
+            });
+    
             // success
             res.status(200).send(
-                parseResponse(true, dbLHA, '00', 'Get LHA Controller Success')
+                parseResponse(true, result, '00', 'Get LHA Controller Success')
             )
         } else {
             let dbLHA = await LHAModel.QueryCustom(`CALL SP_VIEW_LHA_WHERE('`+status+`')`);
-        
+            let obj = dbLHA.rows[0]
+            result = _.map(obj, function(data){      
+                return dataRekomendasi = {
+                    ID_LHA              : data.ID_LHA,
+                    NomorLHA            : data.NomorLHA,
+                    JudulLHA            : data.JudulLHA,
+                    TanggalLHA          : moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA             : data.TipeLHA,
+                    StatusLHA           : data.StatusLHA,
+                    TotalTemuan         : data.TotalTemuan,
+                    TotalRekomendasi    : data.TotalRekomendasi
+                };
+            });
+    
             // success
             res.status(200).send(
-            parseResponse(true, dbLHA, '00', 'Get LHA Controller Success')
+            parseResponse(true, result, '00', 'Get LHA Controller Success')
             )
         }
 
@@ -46,9 +75,23 @@ LHAController.getLHAbyIDController = async(req, res, next) => {
         let condition = [{ key:'ID_LHA', value:idLHA}]
         let dbLHA = await LHAModel.getAll('*', condition);
 
+        result = _.map(dbLHA, function(data){
+            return dataRekomendasi = {
+                ID_LHA              : data.ID_LHA,
+                NomorLHA            : data.NomorLHA,
+                JudulLHA            : data.JudulLHA,
+                DokumenAudit        : data.DokumenAudit,
+                TanggalLHA          : moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                TipeLHA             : data.TipeLHA,
+                StatusLHA           : data.StatusLHA,
+                CreatedDate         : moment(data.CreatedDate).format('YYYY-MM-DD'),
+                CreatedBy           : data.CreatedBy,
+            };
+        });
+
         // success
         res.status(200).send(
-            parseResponse(true, dbLHA, '00', 'Get LHA Controller Success')
+            parseResponse(true, result, '00', 'Get LHA Controller Success')
         )
     } catch(error) {
         console.log('Error exception :' + error)
@@ -99,14 +142,42 @@ LHAController.getTemuanController = async(req, res, next) => {
                 tindakLanjut.push(dataTL.rows)
             }
 
+            resultTemuan = _.map(dataTemuan, function(data){
+                return temuanData = {
+                    ID_TEMUAN               : data.ID_TEMUAN,
+                    ID_LHA                  : data.ID_LHA,
+                    JudulTemuan             : data.JudulTemuan,
+                    IndikasiBernilaiUang    : data.IndikasiBernilaiUang,
+                    Nominal                 : data.Nominal,
+                    StatusTemuan            : data.StatusTemuan,
+                    CreatedDate             : moment(data.CreatedDate).format('YYYY-MM-DD'),
+                    CreatedBy               : data.CreatedBy
+                };
+            });
+    
+            resultRekomendasi = _.map(dataRekomendasi, function(data){
+                return rekomendasiData = {
+                    ID_REKOMENDASI     : data.ID_REKOMENDASI,
+                    ID_TEMUAN          : data.ID_TEMUAN,
+                    JudulRekomendasi   : data.JudulRekomendasi,
+                    BuktiTindakLanjut  : data.BuktiTindakLanjut,
+                    StatusTL           : data.StatusTL,
+                    DueDate            : moment(data.DueDate).format('YYYY-MM-DD'),
+                    CloseDate          : moment(data.CloseDate).format('YYYY-MM-DD'),
+                    CreatedDate        : moment(data.CreatedDate).format('YYYY-MM-DD'),
+                    CreatedBy          : data.CreatedBy
+                };
+            });
+        
             result.push([{
-                temuan : dataTemuan,
-                rekomendasi : dataRekomendasi,
+                temuan : resultTemuan,
+                rekomendasi : resultRekomendasi,
                 pic : pic,
                 TL : tindakLanjut
             }])            
         }
 
+        
         // success
         res.status(200).send(
             parseResponse(true, result, '00', 'Get Temuan Controller Success')
@@ -129,9 +200,22 @@ LHAController.getTemuanbyIDController = async(req, res, next) => {
         let condition = [{ key:'ID_TEMUAN', value:idTemuan}]
         let db = await TemuanModel.getAll('*', condition);
 
+        resultTemuan = _.map(db, function(data){
+            return temuanData = {
+                ID_TEMUAN               : data.ID_TEMUAN,
+                ID_LHA                  : data.ID_LHA,
+                JudulTemuan             : data.JudulTemuan,
+                IndikasiBernilaiUang    : data.IndikasiBernilaiUang,
+                Nominal                 : data.Nominal,
+                StatusTemuan            : data.StatusTemuan,
+                CreatedDate             : moment(data.CreatedDate).format('YYYY-MM-DD'),
+                CreatedBy               : data.CreatedBy
+            };
+        });
+        
         // success
         res.status(200).send(
-            parseResponse(true, db, '00', 'Get Temuan Controller Success')
+            parseResponse(true, resultTemuan, '00', 'Get Temuan Controller Success')
         )
     } catch(error) {
         console.log('Error exception :' + error)
@@ -156,9 +240,23 @@ LHAController.getRekomendasibyIDController = async(req, res, next) => {
                     WHERE tblt_rekomendasi_fungsi.ID_REKOMENDASI =` + idRekomendasi
 
         let pic = await FungsiRekomendasiModel.QueryCustom(sql);
-        
+
+        resultRekomendasi = _.map(db, function(data){
+            return rekomendasiData = {
+                ID_REKOMENDASI     : data.ID_REKOMENDASI,
+                ID_TEMUAN          : data.ID_TEMUAN,
+                JudulRekomendasi   : data.JudulRekomendasi,
+                BuktiTindakLanjut  : data.BuktiTindakLanjut,
+                StatusTL           : data.StatusTL,
+                DueDate            : moment(data.DueDate).format('YYYY-MM-DD'),
+                CloseDate          : moment(data.CloseDate).format('YYYY-MM-DD'),
+                CreatedDate        : moment(data.CreatedDate).format('YYYY-MM-DD'),
+                CreatedBy          : data.CreatedBy
+            };
+        });
+    
         let postData = [{
-            rekomendasi : db,
+            rekomendasi : resultRekomendasi,
             PIC : pic.rows
         }]
  
@@ -186,14 +284,31 @@ LHAController.getRekomendasiController = async(req, res, next) => {
                     FROM tblt_rekomendasi R
                     LEFT JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
                     INNER JOIN tblt_lha LHA ON LHA.ID_LHA = T.ID_LHA
-                    WHERE LHA.StatusLHA = 'A1' AND T.StatusTemuan = 'A1' AND R.StatusTL = 'A1'
-                    ORDER BY LHA.NomorLHA ASC`
+                    WHERE LHA.StatusLHA = 'A1' AND T.StatusTemuan = 'A1' AND R.StatusTL = 'A1' 
+                    OR R.StatusTL = 'A4'
+                    ORDER BY R.DueDate DESC`
 
         let dbRekomendasi = await TemuanModel.QueryCustom(sql);
+        let obj = dbRekomendasi.rows
+
+        result = _.map(obj, function(data){      
+            return dataRekomendasi = {
+                ID_LHA              : data.ID_LHA,
+                NomorLHA            : data.NomorLHA,
+                JudulLHA            : data.JudulLHA,
+                ID_TEMUAN           : data.ID_TEMUAN,
+                JudulTemuan         : data.JudulTemuan,
+                ID_REKOMENDASI      : data.ID_REKOMENDASI,
+                JudulRekomendasi    : data.JudulRekomendasi,
+                TipeLHA             : data.TipeLHA,
+                DueDate             : moment(data.DueDate).format('YYYY-MM-DD'),
+                StatusTL            : data.StatusTL,
+            };
+        });
 
         // success
         res.status(200).send(
-            parseResponse(true, dbRekomendasi, '00', 'Get Rekomendasi Controller Success')
+            parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
         )
     } catch(error) {
         console.log('Error exception :' + error)

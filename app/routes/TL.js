@@ -8,5 +8,7 @@ router
     .post('/auditee', TLController.auditeeTLController)
     .post('/getTLbyRekomendasi', TLController.getTLByRekomendasiController)
     .post('/closeRekomendasi', TLController.closeRekomendasiController)
+    .post('/rejectTLRekomendasi', TLController.rejectTLRekomendasiController)
+    .post('/perpanjangDueDate', TLController.perpanjangDueDateController)
 
 module.exports = router
