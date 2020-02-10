@@ -433,10 +433,10 @@ CreateLHAController.SubmitController = async(req, res, next) => {
             let submitLHA = await LHAModel.save(statusLHA, whereLHA)
     
             if (submitLHA.success == true) {
-                getTemuan = await TemuanModel.getAll('*', whereLHA)
+                let getTemuan = await TemuanModel.getAll('*', whereLHA)
 
                 if (getTemuan.length > 0) {
-                    statusTemuan = [{key:'StatusTemuan', value:'A1'}]
+                    let statusTemuan = [{key:'StatusTemuan', value:'A1'}]
     
                     resultTemuan = []
                     for (let i = 0; i < getTemuan.length; i++) {
@@ -453,18 +453,40 @@ CreateLHAController.SubmitController = async(req, res, next) => {
 
                         dataRekomendasi = []
                         for (let x = 0; x < getTemuan.length; x++) {
-                            whereTemuan = [{key:'ID_TEMUAN', value : getTemuan[x].ID_TEMUAN}]
+                            let whereTemuan = [{key:'ID_TEMUAN', value : getTemuan[x].ID_TEMUAN}]
                             let getRekomendasi = await RekomendasiModel.getAll('*', whereTemuan)
 
                             dataRekomendasi.push(getRekomendasi)
                         }
 
-                        statusCode      = 200
-                        responseCode    = '00'
-                        message         = 'Submit LHA Fungsi Controller'
-                        acknowledge     = true
-                        result          = dataRekomendasi
+                        submitResult = []
+                        for (let y = 0; y < dataRekomendasi.length; y++) {
+                            for (let i = 0; i < dataRekomendasi[y].length; i++) {
+                                let conditionRek = [{key:'ID_REKOMENDASI', value : dataRekomendasi[y][i].ID_REKOMENDASI}]
+                                let statusRek = [{key:'StatusTL', value : 'A1'}]
+                                let submitRekomendasi = await RekomendasiModel.save(statusRek, conditionRek)
+                                submitResult.push(submitRekomendasi.success)
+                            }
+                        }
 
+                        let resultSubmit = submitResult.every(myFunction);
+                        function myFunction(value) {
+                            return value == true;
+                        }    
+
+                        if (resultSubmit == true) {
+                            let submitData = [{
+                                LHA : getLHA,
+                                Temuan : getTemuan,
+                                Rek : dataRekomendasi
+                            }]
+
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Submit LHA Fungsi Controller'
+                            acknowledge     = true
+                            result          = submitData
+                        }
                     } 
                 } else {
                     statusCode      = 200
