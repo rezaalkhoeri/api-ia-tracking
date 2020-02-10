@@ -3,6 +3,7 @@ const LHAModel                    = require('../models/lha.model');
 const TemuanModel                 = require('../models/temuan.model');
 const RekomendasiModel            = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel      = require('../models/fungsi_rekomendasi.model');
+const _                         = require('lodash');
 const parseResponse               = require('../helpers/parse-response')
 const log                         = 'Create LHA controller';
 
@@ -243,20 +244,34 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
     
     
             if (cekRekomendasi == true) {
-                // let LHAcondition = [{ key:'NomorLHA', value: nomorLHA}]
-                // let totalRekomendasi = [{ key:'TotalRekomendasi', value:getRekomendasi.length }]
-                // let LHAupdate = await LHAModel.save(totalRekomendasi, LHAcondition)    
-    
-                let fungsiRekomendasi = []
-                for (let y = 0; y < dataPICFungsi.length; y++) {
-                    for (let x = 0; x < dataPICFungsi[y].length; x++) {
-                        fungsiRekomendasi.push([
-                            { key: 'ID_REKOMENDASI', value: dataPICFungsi[y][x].idRekomendasi},
-                            { key: 'ID_FUNGSI', value: dataPICFungsi[y][x].idFungsi},
-                        ])    
-                    }
+                let temuanID = []
+                for (let y = 0; y < getRekomendasi.length; y++) {
+                    temuanID.push(getRekomendasi[y].idTemuan)
                 }
-    
+                function onlyUnique(value, index, self) { 
+                    return self.indexOf(value) === index;
+                }
+                let unique = temuanID.filter( onlyUnique );
+
+                IDrekomendasi = []
+                for (let i = 0; i < unique.length; i++) {
+                    let whereTemuan = [{ key: 'ID_TEMUAN', value: unique[i]}]
+                    let getRekID = await RekomendasiModel.getAll('ID_REKOMENDASI', whereTemuan)
+                    IDrekomendasi.push(getRekID)
+                }
+
+                let merged = [].concat.apply([], IDrekomendasi);
+
+                let fungsiRekomendasi = []
+                for (let i = 0; i < merged.length; i++) {
+                    for (let x = 0; x < dataPICFungsi[i].length; x++) {
+                        fungsiRekomendasi.push([
+                            { key: 'ID_REKOMENDASI', value: merged[i].ID_REKOMENDASI},
+                            { key: 'ID_FUNGSI', value: dataPICFungsi[i][x].idFungsi},
+                        ])    
+                    }                        
+                }
+
                 let PICfungsidata = []
                 for (let z = 0; z < fungsiRekomendasi.length; z++) {
                     let fungsiRekSave = await FungsiRekomendasiModel.save(fungsiRekomendasi[z])

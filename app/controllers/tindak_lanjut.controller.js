@@ -212,7 +212,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
 
             let dataRek = [
                 {key:'StatusTL', value:'A3'},
-                {key:'CloseDueDate', value: date.format(now, 'YYYY-MM-DD')},
+                {key:'CloseDate', value: date.format(now, 'YYYY-MM-DD')},
             ]
 
             let closeTL = await TLModel.save(dataTL, TLcondition)
