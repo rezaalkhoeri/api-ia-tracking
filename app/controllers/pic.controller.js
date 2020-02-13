@@ -8,8 +8,29 @@ PICController.getPICController = async(req, res, next) => {
 
     try{
         let sql = `SELECT tblm_pic.*, tblm_fungsi.* FROM tblm_pic
-        JOIN tblm_fungsi On tblm_pic.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
-        WHERE tblm_pic.Status = '1'`
+        JOIN tblm_fungsi On tblm_pic.ID_FUNGSI = tblm_fungsi.ID_FUNGSI`
+        let dbPIC = await PICModel.QueryCustom(sql);
+
+        // success
+        res.status(200).send(
+            parseResponse(true, dbPIC, '00', 'Get PIC Controller Success')
+        )
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+PICController.modalGetPICController = async(req, res, next) => {
+    console.log(`├── ${log} :: Get PIC Modal Controller`);
+
+    try{
+        let sql = `SELECT DISTINCT tblm_fungsi.ID_FUNGSI, tblm_fungsi.NamaFungsi, tblm_pic.AccountTipe FROM tblm_pic
+        JOIN tblm_fungsi On tblm_pic.ID_FUNGSI = tblm_fungsi.ID_FUNGSI`
         let dbPIC = await PICModel.QueryCustom(sql);
 
         // success

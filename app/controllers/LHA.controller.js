@@ -377,4 +377,95 @@ LHAController.searchLHAController = async(req, res, next) => {
     }
 }
 
+LHAController.editPICfungsiController = async(req, res, next) => {
+    console.log(`├── ${log} :: Edit PIC Fungsi Rekomendasi Controller`);
+
+    try{
+        let { idRekomendasi } = req.body
+        let where = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+        let checkID = await FungsiRekomendasiModel.getAll('*', where)
+
+        if (checkID.length > 0) {
+            let deleteOldPIC = await FungsiRekomendasiModel.delete(where)
+
+            if (deleteOldPIC.success = true) {
+                let { picFungsi } = req.body
+
+                let GetPicFungsi = JSON.parse(picFungsi)
+
+                let dataFungsi = []
+                for (let i = 0; i < GetPicFungsi.length; i++) {
+                    dataFungsi.push([
+                        {key:'ID_REKOMENDASI', value:idRekomendasi},
+                        {key:'ID_FUNGSI', value:GetPicFungsi[i].idFungsi}
+                    ])
+                }
+
+                let updateResult = []
+                for (let x = 0; x < dataFungsi.length; x++) {
+                    let update = await FungsiRekomendasiModel.save(dataFungsi[x])
+                    updateResult.push(update.success)
+                }
+
+                let updatePICFungsi = updateResult.every(myFunction);
+                function myFunction(value) {
+                    return value == true;
+                }
+
+                if (updatePICFungsi == true) {
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
+                    acknowledge     = false
+                    result          = dataFungsi       
+                }
+            }
+        } else {
+            let { picFungsi } = req.body
+
+            let GetPicFungsi = JSON.parse(picFungsi)
+
+            let dataFungsi = []
+            for (let i = 0; i < GetPicFungsi.length; i++) {
+                dataFungsi.push([
+                    {key:'ID_REKOMENDASI', value:idRekomendasi},
+                    {key:'ID_FUNGSI', value:GetPicFungsi[i].idFungsi}
+                ])
+            }
+
+            let updateResult = []
+            for (let x = 0; x < dataFungsi.length; x++) {
+                let update = await FungsiRekomendasiModel.save(dataFungsi[x])
+                updateResult.push(update.success)
+            }
+
+            let updatePICFungsi = updateResult.every(myFunction);
+            function myFunction(value) {
+                return value == true;
+            }
+
+            if (updatePICFungsi == true) {
+                statusCode      = 200
+                responseCode    = '00'
+                message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
+                acknowledge     = false
+                result          = dataFungsi       
+            }
+        }
+
+        // return response
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )       
+
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
 module.exports = LHAController

@@ -6,6 +6,7 @@ const PICController             = require('../controllers/PIC.controller')
 router
     .all('/*', authentication)
     .get('/', PICController.getPICController)
+    .get('/FungsiPIC', PICController.modalGetPICController)
     .get('/:ID', PICController.getPICByIDController)
     .post('/create-update', PICController.postPICController)
 
