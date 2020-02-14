@@ -16,7 +16,67 @@ LHAController.getLHAController = async(req, res, next) => {
         let {status} = req.body
 
         if (status == 'all') {
-            let dbLHA = await LHAModel.QueryCustom('CALL SP_VIEW_ALL_DATA');           
+            // let { search, limit, offset } = req.body
+            let dbLHA = await LHAModel.QueryCustom(`CALL SP_GET_ALL_DATA`);
+            let obj = dbLHA.rows[0]
+            result = _.map(obj, function(data){     
+                return dataLHA = {
+                    ID_LHA              : data.ID_LHA,
+                    NomorLHA            : data.NomorLHA,
+                    JudulLHA            : data.JudulLHA,
+                    TanggalLHA          : moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA             : data.TipeLHA,
+                    StatusLHA           : data.StatusLHA,
+                    TotalTemuan         : data.TotalTemuan,
+                    TotalRekomendasi    : data.TotalRekomendasi
+                }
+            });
+    
+            // success
+            res.status(200).send(
+                parseResponse(true, result, '00', 'Get LHA Controller Success')
+            )
+        } else {
+            let dbLHA = await LHAModel.QueryCustom(`CALL SP_VIEW_LHA_WHERE('`+status+`')`);
+            let obj = dbLHA.rows[0]
+            result = _.map(obj, function(data){      
+                return dataRekomendasi = {
+                    ID_LHA              : data.ID_LHA,
+                    NomorLHA            : data.NomorLHA,
+                    JudulLHA            : data.JudulLHA,
+                    TanggalLHA          : moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA             : data.TipeLHA,
+                    StatusLHA           : data.StatusLHA,
+                    TotalTemuan         : data.TotalTemuan,
+                    TotalRekomendasi    : data.TotalRekomendasi
+                };
+            });
+    
+            // success
+            res.status(200).send(
+            parseResponse(true, result, '00', 'Get LHA Controller Success')
+            )
+        }
+
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+LHAController.getLHAdataController = async(req, res, next) => {
+    console.log(`├── ${log} :: Get LHA Controller`);
+
+    try{
+        let {status} = req.body
+
+        if (status == 'all') {
+            let { search, limit, offset } = req.body
+            let dbLHA = await LHAModel.QueryCustom(`CALL SP_VIEW_ALL_DATA('`+ search +`',`+limit+`,`+offset+`)`);           
             let obj = dbLHA.rows[0]
             result = _.map(obj, function(data){     
                 return dataLHA = {

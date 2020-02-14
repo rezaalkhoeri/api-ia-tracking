@@ -6,6 +6,7 @@ const LHAController       = require('../controllers/LHA.controller')
 router
     .all('/*', authentication)
     .post('/', LHAController.getLHAController)
+    .post('/getLHAdata', LHAController.getLHAdataController)
     .post('/getByID', LHAController.getLHAbyIDController)
     .post('/temuanRekomendasi', LHAController.getTemuanController)
     .post('/getTemuanByID', LHAController.getTemuanbyIDController)
