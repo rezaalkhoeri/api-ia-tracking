@@ -3,6 +3,7 @@ const LHAModel                  = require('../models/lha.model');
 const TemuanModel               = require('../models/temuan.model');
 const RekomendasiModel          = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel    = require('../models/fungsi_rekomendasi.model');
+const LogActivityModel              = require('../models/log_activity.model')
 const TLModel                   = require('../models/TL.model');
 const _                         = require('lodash');
 const moment                    = require('moment');
@@ -186,7 +187,7 @@ LHAController.getTemuanController = async(req, res, next) => {
             let pic = []
             for (let i = 0; i < dataRekomendasi.length; i++) {
                 wherePIC = dataRekomendasi[i].ID_REKOMENDASI
-                sql = `SELECT tblt_rekomendasi.ID_REKOMENDASI, tblm_fungsi.* FROM tblt_rekomendasi 
+                sql = `SELECT tblt_rekomendasi_fungsi.ID_RF, tblt_rekomendasi.ID_REKOMENDASI, tblm_fungsi.* FROM tblt_rekomendasi 
                         LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
                         LEFT JOIN tblm_fungsi ON tblt_rekomendasi_fungsi.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
                         WHERE tblt_rekomendasi.ID_REKOMENDASI =`+wherePIC
@@ -441,10 +442,18 @@ LHAController.editPICfungsiController = async(req, res, next) => {
     console.log(`├── ${log} :: Edit PIC Fungsi Rekomendasi Controller`);
 
     try{
-        let { idRekomendasi } = req.body
+        let { idRekomendasi, createdBy } = req.body
+
+        let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+        let dataRek = await RekomendasiModel.getBy('*', whereR)
+        let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+        let dataTemuan = await TemuanModel.getBy('*', whereT)
+        let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
+        let dataLHA = await LHAModel.getBy('*', whereL)
+
+
         let where = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
         let checkID = await FungsiRekomendasiModel.getAll('*', where)
-
         if (checkID.length > 0) {
             let deleteOldPIC = await FungsiRekomendasiModel.delete(where)
 
@@ -473,11 +482,22 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                 }
 
                 if (updatePICFungsi == true) {
-                    statusCode      = 200
-                    responseCode    = '00'
-                    message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
-                    acknowledge     = false
-                    result          = dataFungsi       
+                    let logData = [
+                        {key:'ID_LHA', value:dataLHA.ID_LHA},
+                        {key:'UserId', value:createdBy},
+                        {key:'Activity', value:'Edit PIC Fungsi'},
+                        {key:'AdditionalInfo', value:'Edit PIC Fungsi Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                        {key:'Type', value:'New'}
+                    ]
+                    let log = await LogActivityModel.save(logData);
+
+                    if (log.success == true) {
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
+                        acknowledge     = false
+                        result          = dataFungsi                                   
+                    }                    
                 }
             }
         } else {
@@ -505,11 +525,22 @@ LHAController.editPICfungsiController = async(req, res, next) => {
             }
 
             if (updatePICFungsi == true) {
-                statusCode      = 200
-                responseCode    = '00'
-                message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
-                acknowledge     = false
-                result          = dataFungsi       
+                let logData = [
+                    {key:'ID_LHA', value:dataLHA.ID_LHA},
+                    {key:'UserId', value:createdBy},
+                    {key:'Activity', value:'Edit PIC Fungsi'},
+                    {key:'AdditionalInfo', value:'Edit PIC Fungsi Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                    {key:'Type', value:'New'}
+                ]
+                let log = await LogActivityModel.save(logData);
+
+                if (log.success == true) {
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
+                    acknowledge     = false
+                    result          = dataFungsi                                   
+                }
             }
         }
 

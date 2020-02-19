@@ -1,0 +1,179 @@
+            let { rekomendasi } = req.body
+            let getRekomendasi = JSON.parse(rekomendasi)
+
+            function arr_diff (a1, a2) {
+
+                var a = [], diff = [];
+            
+                for (var i = 0; i < a1.length; i++) {
+                    a[a1[i]] = true;
+                }
+            
+                for (var i = 0; i < a2.length; i++) {
+                    if (a[a2[i]]) {
+                        delete a[a2[i]];
+                    } else {
+                        a[a2[i]] = true;
+                    }
+                }
+            
+                for (var k in a) {
+                    diff.push(k);
+                }
+            
+                return diff;
+            }
+
+            let oldRek = []
+            let newRek = []
+
+            let rekomendasiRes = []
+            let fungsiRekomendasi = []
+            let dataRekomendasi = []
+            for (let i = 0; i < getRekomendasi.length; i++) {
+                let whereRek = [{ key: 'ID_REKOMENDASI', value: getRekomendasi[i].idRekomendasi}]
+                let checkRek = await RekomendasiModel.getAll('ID_REKOMENDASI', whereRek)
+
+                if (checkRek.length > 0) {
+                    let dataRekUpdate = [
+                        { key: 'ID_TEMUAN', value: getRekomendasi[i].idTemuan},               
+                        { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi},
+                        { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL},
+                        { key: 'StatusTL', value: 'A0'},
+                        { key: 'DueDate', value: getRekomendasi[i].dueDate},
+                        { key: 'CreatedBy', value: createdBy},
+                    ]
+                    
+                    let updateRek =  await RekomendasiModel.save(dataRekUpdate, whereRek);  
+                    rekomendasiRes.push(updateRek.success)
+                    dataRekomendasi.push(dataRekUpdate)
+
+                    let dataPIC = getRekomendasi[i].PICfungsi
+                    for (let y = 0; y < dataPIC.length; y++) {
+                        let wherePIC = [{ key: 'ID_RF', value: dataPIC[y].idRF}]
+                        let checkPIC = await FungsiRekomendasiModel.getAll('*', wherePIC) 
+                        
+                        if (checkPIC.length > 0) {
+                            let hapusPIC = await FungsiRekomendasiModel.delete(wherePIC)
+
+                            if (hapusPIC.success == true) {
+                                let dataPICfungsi = [
+                                    { key: 'ID_REKOMENDASI', value: getRekomendasi[i].idRekomendasi},
+                                    { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
+                                ]
+    
+                                let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi);
+                                fungsiRekomendasi.push(dataPICfungsi)
+                                rekomendasiRes.push(updatePIC.success)                                    
+                            }
+                        } else {
+                            let dataPICfungsi = [
+                                { key: 'ID_REKOMENDASI', value: getRekomendasi[i].idRekomendasi},
+                                { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
+                            ]
+
+                            let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi);  
+                            fungsiRekomendasi.push(dataPICfungsi)
+                            rekomendasiRes.push(updatePIC.success)                            
+                        }
+                    }
+
+                } else {
+                    let OldTemuanID = [{ key:'ID_TEMUAN', value:getRekomendasi[i].idTemuan}]
+                    let OldRekomendasiID = await RekomendasiModel.getAll('ID_REKOMENDASI',OldTemuanID)
+                    let resultID = _.map(OldRekomendasiID, function(data){
+                        return data.ID_REKOMENDASI
+                    });        
+                    oldRek.push(resultID)
+
+                    let dataRekomendasiInsert = [
+                        { key: 'ID_TEMUAN', value: getRekomendasi[i].idTemuan},               
+                        { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi},
+                        { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL},
+                        { key: 'StatusTL', value: 'A0'},
+                        { key: 'DueDate', value: getRekomendasi[i].dueDate},
+                        { key: 'CreatedBy', value: createdBy},
+                    ]
+    
+                    let insertRek =  await RekomendasiModel.save(dataRekomendasiInsert);  
+                    rekomendasiRes.push(insertRek.success)
+                    dataRekomendasi.push(dataRekomendasiInsert)
+
+                    let NewTemuanID = [{ key:'ID_TEMUAN', value:getRekomendasi[i].idTemuan}]
+                    let NewRekomendasiID = await RekomendasiModel.getAll('ID_REKOMENDASI',NewTemuanID)
+                    let NewresultID = _.map(NewRekomendasiID, function(data){
+                        return data.ID_REKOMENDASI
+                    });        
+                    newRek.push(NewresultID)                
+                }
+            }
+
+            let Oldmerged = [].concat.apply([], oldRek);
+            let Newmerged = [].concat.apply([], newRek);
+            let newData = arr_diff(Oldmerged,Newmerged)
+
+            console.log(newData)
+
+            let dataPIC = getRekomendasi[i].PICfungsi
+            for (let y = 0; y < dataPIC.length; y++) {
+                let wherePIC = [{ key: 'ID_RF', value: dataPIC[y].idRF}]
+                let checkPIC = await FungsiRekomendasiModel.getAll('*', wherePIC) 
+                
+                if (checkPIC.length > 0) {
+                    let hapusPIC = await FungsiRekomendasiModel.delete(wherePIC)
+
+                    if (hapusPIC.success == true) {
+                        let dataPICfungsi = [
+                            { key: 'ID_REKOMENDASI', value: getRekomendasi[i].idRekomendasi},
+                            { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
+                        ]
+
+                        let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi);
+                        fungsiRekomendasi.push(dataPICfungsi)
+                        rekomendasiRes.push(updatePIC.success)                                    
+                    }
+                } else {
+                    let dataPICfungsi = [
+                        { key: 'ID_REKOMENDASI', value: getRekomendasi[i].idRekomendasi},
+                        { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
+                    ]
+
+                    let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi);  
+                    fungsiRekomendasi.push(dataPICfungsi)
+                    rekomendasiRes.push(updatePIC.success)                            
+                }
+            }
+
+
+            let cekResponse = rekomendasiRes.every(myFunction);
+            function myFunction(value) {
+                return value == true;
+            }
+                
+            if (cekResponse == true) {
+                let whereID = [{key:'ID_LHA', value:idLHA}]
+                let nomorLHA = await LHAModel.getAll('NomorLHA', whereID)
+
+                let logData = [
+                    {key:'ID_LHA', value:idLHA},
+                    {key:'UserId', value:createdBy},
+                    {key:'Activity', value:'Edit Rekomendasi'},
+                    {key:'AdditionalInfo', value:'Edit '+ dataRekomendasi.length +' data rekomendasi pada LHA nomor '+ nomorLHA[0].NomorLHA +'.'},
+                    {key:'Type', value:'New'}
+                ]
+                let log = await LogActivityModel.save(logData);
+
+                if (log.success == true) {
+                    postData = [ 
+                        {key:'Data Rekomendasi', value:dataRekomendasi},
+                        {key:'Data Fungsi Rekomendasi', value:fungsiRekomendasi},
+                    ]
+
+                   
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Post Rekomendasi Fungsi Controller'
+                    acknowledge     = true
+                    result          = postData
+                }                
+            }

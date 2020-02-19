@@ -4,6 +4,7 @@ const LHAModel                       = require('../models/lha.model');
 const TemuanModel                   = require('../models/temuan.model');
 const RekomendasiModel              = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel        = require('../models/fungsi_rekomendasi.model');
+const LogActivityModel              = require('../models/log_activity.model')
 const date                          = require('date-and-time');
 const now                           = new Date();
 const moment                        = require('moment');
@@ -37,7 +38,14 @@ TLController.auditeeTLController = async(req, res, next) => {
 
     try{
 
-        let { action, idRF } = req.body
+        let { action, idRF, createdBy } = req.body
+
+        let whereRek = [{key:'ID_REKOMENDASI', value:idRF}]
+        let getRek = await RekomendasiModel.getBy('*', whereRek)
+        let whereTemuan = [{key:'ID_Temuan', value:getRek.ID_TEMUAN}]
+        let getTemuan = await TemuanModel.getBy('*', whereTemuan)
+        let whereLHA = [{key:'ID_LHA', value:getTemuan.ID_LHA}]
+        let getLHA = await LHAModel.getBy('*', whereLHA)
 
         if (action == 'create') {
 
@@ -46,7 +54,7 @@ TLController.auditeeTLController = async(req, res, next) => {
 
             if (checkTL.length > 0) {
 
-                let { catatanAuditee, createdBy } = req.body
+                let { catatanAuditee } = req.body
 
                 if (!req.files || Object.keys(req.files).length === 0) {
 
@@ -62,9 +70,22 @@ TLController.auditeeTLController = async(req, res, next) => {
                     let updateTL = await TLModel.save(dataTL, condition)
                     
                     if (updateTL.success == true) {
-                        res.status(200).send(
-                            parseResponse(true, dataTL, '00', 'Insert TL Controller Success')
-                        )            
+                        let logData = [
+                            {key:'ID_LHA', value:getLHA.ID_LHA},
+                            {key:'UserId', value:createdBy},
+                            {key:'Activity', value:'Tindak Lanjut By Auditee'},
+                            {key:'AdditionalInfo', value:'Menambahkan tindak lanjut untuk Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
+                            {key:'Type', value:'New'}
+                        ]
+                        let log = await LogActivityModel.save(logData);
+                        
+                        if (log.success == true) {
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Insert TL Controller Success'
+                            acknowledge     = true
+                            result          = dataTL                                
+                        }
                     }
 
 
@@ -93,9 +114,22 @@ TLController.auditeeTLController = async(req, res, next) => {
                     let updateTL = await TLModel.save(dataTL, condition)
                     
                     if (updateTL.success == true) {
-                        res.status(200).send(
-                            parseResponse(true, dataTL, '00', 'Insert TL Controller Success')
-                        )            
+                        let logData = [
+                            {key:'ID_LHA', value:getLHA.ID_LHA},
+                            {key:'UserId', value:createdBy},
+                            {key:'Activity', value:'Tindak Lanjut By Auditee'},
+                            {key:'AdditionalInfo', value:'Menambahkan tindak lanjut untuk Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
+                            {key:'Type', value:'New'}
+                        ]
+                        let log = await LogActivityModel.save(logData);
+
+                        if (log.success == true) {
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Insert TL Controller Success'
+                            acknowledge     = true
+                            result          = dataTL                                
+                        }
                     }
                 }
 
@@ -134,9 +168,22 @@ TLController.auditeeTLController = async(req, res, next) => {
                     let insertTL = await TLModel.save(dataTL)
                     
                     if (insertTL.success == true) {
-                        res.status(200).send(
-                            parseResponse(true, dataTL, '00', 'Insert TL Controller Success')
-                        )            
+                        let logData = [
+                            {key:'ID_LHA', value:getLHA.ID_LHA},
+                            {key:'UserId', value:createdBy},
+                            {key:'Activity', value:'Tindak Lanjut By Auditee'},
+                            {key:'AdditionalInfo', value:'Menambahkan tindak lanjut untuk Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
+                            {key:'Type', value:'New'}
+                        ]
+                        let log = await LogActivityModel.save(logData);
+            
+                        if (log.success == true) {
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Insert TL Controller Success'
+                            acknowledge     = true
+                            result          = dataTL                                
+                        }
                     }
                 }
                    
@@ -154,15 +201,24 @@ TLController.auditeeTLController = async(req, res, next) => {
                 let updateStatusRek = await RekomendasiModel.save(statusRekomendasi, where)
 
                 if (updateStatusRek.success ==  true ) {
-
                     let postData = [dataSubmit, statusRekomendasi]
 
-                    statusCode      = 200
-                    responseCode    = '00'
-                    message         = 'Update Status Controller Success'
-                    acknowledge     = true
-                    result          = postData
-                    
+                    let logData = [
+                        {key:'ID_LHA', value:getLHA.ID_LHA},
+                        {key:'UserId', value:createdBy},
+                        {key:'Activity', value:'Submit Tindak Lanjut Rekomendasi to Status A2 (ON REVIEW)'},
+                        {key:'AdditionalInfo', value:'Submit Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
+                        {key:'Type', value:'Submit'}
+                    ]
+                    let log = await LogActivityModel.save(logData);
+
+                    if (log.success == true) {
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Update Status Controller Success'
+                        acknowledge     = true
+                        result          = postData      
+                    }                    
                 }
             }
 
@@ -194,6 +250,15 @@ TLController.closeRekomendasiController = async(req, res, next) => {
 
     try{
         let {idRekomendasi} = req.body
+
+        let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+        let dataRek = await RekomendasiModel.getBy('*', whereR)
+        let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+        let dataTemuan = await TemuanModel.getBy('*', whereT)
+        let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
+        let dataLHA = await LHAModel.getBy('*', whereL)
+        
+
         let TLcondition = [{key:'ID_RF', value:idRekomendasi}]
         let Rekomendasicondition = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
 
@@ -249,20 +314,53 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                             let statusLHA = await LHAModel.save(dataLHA, whereLHA)
 
                             if (statusLHA.success == true) {
+                                let logData = [
+                                    {key:'ID_LHA', value:dataLHA.ID_LHA},
+                                    {key:'UserId', value:auditorBy},
+                                    {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
+                                    {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                                    {key:'Type', value:'Approval'}
+                                ]
+                                let log = await LogActivityModel.save(logData);
+                                
+                                if (log.success == true) {
+                                    res.status(200).send(
+                                        parseResponse(true, dataTL, '00', 'Close Rekomendasi Controller Success')
+                                    )
+                                }
+                            }
+                        } else {                    
+                            let logData = [
+                                {key:'ID_LHA', value:dataLHA.ID_LHA},
+                                {key:'UserId', value:auditorBy},
+                                {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
+                                {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                                {key:'Type', value:'Approval'}
+                            ]
+                            let log = await LogActivityModel.save(logData);
+                            
+                            if (log.success == true) {
                                 res.status(200).send(
                                     parseResponse(true, dataTL, '00', 'Close Rekomendasi Controller Success')
                                 )
                             }
-                        } else {
-                            res.status(200).send(
-                                parseResponse(true, dataTL, '00', 'Close Rekomendasi Controller Success')
-                            )
                         }
                     }
                 } else {
-                    res.status(200).send(
-                        parseResponse(true, dataTL, '00', 'Close Rekomendasi Controller Success')
-                    )
+                    let logData = [
+                        {key:'ID_LHA', value:dataLHA.ID_LHA},
+                        {key:'UserId', value:auditorBy},
+                        {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
+                        {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                        {key:'Type', value:'Approval'}
+                    ]
+                    let log = await LogActivityModel.save(logData);
+                    
+                    if (log.success == true) {
+                        res.status(200).send(
+                            parseResponse(true, dataTL, '00', 'Close Rekomendasi Controller Success')
+                        )
+                    }
                 }
             }
         } else {
@@ -294,6 +392,14 @@ TLController.rejectTLRekomendasiController = async(req, res, next) => {
 
     try{
         let {idRekomendasi, catatanAuditor, createdBy} = req.body
+
+        let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+        let dataRek = await RekomendasiModel.getBy('*', whereR)
+        let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+        let dataTemuan = await TemuanModel.getBy('*', whereT)
+        let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
+        let dataLHA = await LHAModel.getBy('*', whereL)
+
         let dataTL = [
             {key:'CatatanFungsi', value:catatanAuditor},
             {key:'StatusTL', value:'A4'},
@@ -308,10 +414,21 @@ TLController.rejectTLRekomendasiController = async(req, res, next) => {
             let saveStatusRek = await RekomendasiModel.save(statusRek, whereRekomendasi)
 
             if (saveStatusRek.success == true) {
-                // return response
-                res.status(200).send(
-                    parseResponse(true, dataTL, 00, 'Reject TL Rekomendasi Controller Success')
-                )                
+                let logData = [
+                    {key:'ID_LHA', value:dataLHA.ID_LHA},
+                    {key:'UserId', value:createdBy},
+                    {key:'Activity', value:'Reject Rekomendasi (Status A4 / REJECT)'},
+                    {key:'AdditionalInfo', value:'Reject Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                    {key:'Type', value:'Approval'}
+                ]
+                let log = await LogActivityModel.save(logData);
+
+                if (log.success == true) {
+                    // return response
+                    res.status(200).send(
+                        parseResponse(true, dataTL, 00, 'Reject TL Rekomendasi Controller Success')
+                    )                   
+                }
             }
         }
     } catch(error) {
@@ -329,18 +446,44 @@ TLController.perpanjangDueDateController = async(req, res, next) => {
     console.log(`├── ${log} :: Perpanjang Due Date Rekomendasi Controller`);
 
     try{
-        let {idRekomendasi,dueDate} = req.body
+        let {idRekomendasi, dueDate, createdBy } = req.body
 
-        let dataTL = [
+        let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+        let dataRek = await RekomendasiModel.getBy('*', whereR)
+        let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+        let dataTemuan = await TemuanModel.getBy('*', whereT)
+        let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
+        let dataLHA = await LHAModel.getBy('*', whereL)
+
+        let dataRekomendasi = [
             {key:'DueDate', value: moment(dueDate).format('YYYY-MM-DD')}
         ]
         let whereRekomendasi = [{key:'ID_REKOMENDASI', value: idRekomendasi}]
-        let saveTL = await RekomendasiModel.save(dataTL, whereRekomendasi);
+        let saveTL = await RekomendasiModel.save(dataRekomendasi, whereRekomendasi);
 
         if (saveTL.success == true) {
-            res.status(200).send(
-                parseResponse(true, dataTL, 00, 'Perpanjang Due Date Rekomendasi Controller Success')
-            )                
+            let dataTL = [
+                {key:'AuditorBy', value:createdBy}
+            ]
+            let whereTL = [{key:'ID_RF', value: idRekomendasi}]
+            let updateTL = await TLModel.save(dataTL, whereTL);
+
+            if (updateTL.success == true) {
+                let logData = [
+                    {key:'ID_LHA', value:dataLHA.ID_LHA},
+                    {key:'UserId', value:createdBy},
+                    {key:'Activity', value:'Perpanjang Due Date Rekomendasi'},
+                    {key:'AdditionalInfo', value:'Perpanjang Due Date Rekomendasi '+dataRek.DueDate+' to '+ moment(dueDate).format('YYYY-MM-DD')},
+                    {key:'Type', value:'Approval'}
+                ]
+                let log = await LogActivityModel.save(logData);
+    
+                if (log.success == true) {
+                    res.status(200).send(
+                        parseResponse(true, dataTL, 00, 'Perpanjang Due Date Rekomendasi Controller Success')
+                    )                   
+                }                
+            }
         }
     } catch(error) {
         console.log('Error exception :' + error)

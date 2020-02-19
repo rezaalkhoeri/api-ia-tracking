@@ -3,7 +3,8 @@ const LHAModel                    = require('../models/lha.model');
 const TemuanModel                 = require('../models/temuan.model');
 const RekomendasiModel            = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel      = require('../models/fungsi_rekomendasi.model');
-const _                         = require('lodash');
+const LogActivityModel            = require('../models/log_activity.model');
+const _                           = require('lodash');
 const parseResponse               = require('../helpers/parse-response')
 const log                         = 'Create LHA controller';
 
@@ -83,17 +84,27 @@ CreateLHAController.createLHAController = async(req, res, next) => {
                     }
         
                     if (temuanInsert == true) {
+                        let logData = [
+                            {key:'ID_LHA', value:idLHA},
+                            {key:'UserId', value:createdBy},
+                            {key:'Activity', value:'Create New LHA & Temuan status A0 (DRAFT)'},
+                            {key:'AdditionalInfo', value:'Create LHA dengan nomor '+nomorLHA+' beserta '+dataTemuan.length+' temuan.'},
+                            {key:'Type', value:'New'}
+                        ]                        
+                        let log = await LogActivityModel.save(logData);
         
-                        postData = [
-                            {key:'DATA LHA', value: dataLHA},
-                            {key:'DATA Temuan', value: dataTemuan},
-                        ]
-        
-                        statusCode      = 200
-                        responseCode    = '00'
-                        message         = 'Create LHA Controller Success'
-                        acknowledge     = true
-                        result          = postData
+                        if (log.success == true) {
+                            postData = [
+                                {key:'DATA LHA', value: dataLHA},
+                                {key:'DATA Temuan', value: dataTemuan},
+                            ]
+            
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Create LHA Controller Success'
+                            acknowledge     = true
+                            result          = postData                                
+                        }
                     }    
                 }                    
             } else {
@@ -164,17 +175,27 @@ CreateLHAController.createLHAController = async(req, res, next) => {
                         }
             
                         if (temuanUpdate == true) {
-            
-                            postData = [
-                                {key:'DATA LHA', value: dataLHA},
-                                {key:'DATA Temuan', value: dataTemuan},
-                            ]
-            
-                            statusCode      = 200
-                            responseCode    = '00'
-                            message         = 'Update LHA Controller Success'
-                            acknowledge     = true
-                            result          = postData
+                            let logData = [
+                                {key:'ID_LHA', value:idLHA},
+                                {key:'UserId', value:createdBy},
+                                {key:'Activity', value:'Edit LHA & Temuan status A0 (DRAFT)'},
+                                {key:'AdditionalInfo', value:'Edit data LHA dengan nomor '+nomorLHA+' beserta '+dataTemuan.length+' temuan.'},
+                                {key:'Type', value:'New'}
+                            ]                            
+                            let log = await LogActivityModel.save(logData);
+
+                            if (log.success == true) {
+                                postData = [
+                                    {key:'DATA LHA', value: dataLHA},
+                                    {key:'DATA Temuan', value: dataTemuan},
+                                ]
+                
+                                statusCode      = 200
+                                responseCode    = '00'
+                                message         = 'Update LHA Controller Success'
+                                acknowledge     = true
+                                result          = postData                                    
+                            }
                         }    
                     }
 
@@ -209,7 +230,7 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
 
     try {
 
-        let { action, createdBy } = req.body
+        let { action, idLHA, createdBy } = req.body
 
         if (action == 'create') {
 
@@ -242,12 +263,12 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
                 return value == true;
             }
     
-    
             if (cekRekomendasi == true) {
                 let temuanID = []
                 for (let y = 0; y < getRekomendasi.length; y++) {
                     temuanID.push(getRekomendasi[y].idTemuan)
                 }
+
                 function onlyUnique(value, index, self) { 
                     return self.indexOf(value) === index;
                 }
@@ -269,7 +290,7 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
                             { key: 'ID_REKOMENDASI', value: merged[i].ID_REKOMENDASI},
                             { key: 'ID_FUNGSI', value: dataPICFungsi[i][x].idFungsi},
                         ])    
-                    }                        
+                    }
                 }
 
                 let PICfungsidata = []
@@ -284,134 +305,36 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
                 }
                     
                 if (cekFungsiRekomendasi == true) {
-                
-                    postData = [ 
-                        {key:'Data Rekomendasi', value:dataRekomendasi},
-                        {key:'Data Fungsi Rekomendasi', value:fungsiRekomendasi},
+                    let logData = [
+                        {key:'ID_LHA', value:idLHA},
+                        {key:'UserId', value:createdBy},
+                        {key:'Activity', value:'Add Rekomendasi status A0 (DRAFT)'},
+                        {key:'AdditionalInfo', value:'Menambahkan '+ dataRekomendasi.length +' rekomendasi.'},
+                        {key:'Type', value:'New'}
                     ]
-    
-                    statusCode      = 200
-                    responseCode    = '00'
-                    message         = 'Post Rekomendasi Fungsi Controller'
-                    acknowledge     = true
-                    result          = postData
+                    let log = await LogActivityModel.save(logData);
+
+                    if (log.success == true) {
+                        postData = [ 
+                            {key:'Data Rekomendasi', value:dataRekomendasi},
+                            {key:'Data Fungsi Rekomendasi', value:fungsiRekomendasi},
+                        ]
+        
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Add Rekomendasi Fungsi Controller'
+                        acknowledge     = true
+                        result          = postData                            
+                    }
                 }
             }
     
         } else if (action == 'update') {
-            let { rekomendasi } = req.body
-            let getRekomendasi = JSON.parse(rekomendasi)
-
-            let rekomendasiRes = []
-            let fungsiRekomendasi = []
-            let dataRekomendasi = []
-            for (let i = 0; i < getRekomendasi.length; i++) {
-                let whereRek = [{ key: 'ID_REKOMENDASI', value: getRekomendasi[i].idRekomendasi}]
-                let checkRek = await RekomendasiModel.getAll('ID_REKOMENDASI', whereRek)
-
-                if (checkRek.length > 0) {
-                    let dataRekUpdate = [
-                        { key: 'ID_TEMUAN', value: getRekomendasi[i].idTemuan},               
-                        { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi},
-                        { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL},
-                        { key: 'StatusTL', value: 'A0'},
-                        { key: 'DueDate', value: getRekomendasi[i].dueDate},
-                        { key: 'CreatedBy', value: createdBy},
-                    ]
-                    
-                    let updateRek =  await RekomendasiModel.save(dataRekUpdate, whereRek);  
-                    rekomendasiRes.push(updateRek.success)
-                    dataRekomendasi.push(dataRekUpdate)
-
-                    let dataPIC = getRekomendasi[i].PICfungsi
-                    for (let y = 0; y < dataPIC.length; y++) {
-                        let wherePIC = [{ key: 'ID_RF', value: dataPIC[y].idRF}]
-                        let checkPIC = await FungsiRekomendasiModel.getAll('ID_RF', wherePIC) 
-                        
-                        if (checkPIC.length > 0) {
-                            let dataPICfungsi = [
-                                { key: 'ID_REKOMENDASI', value: dataPIC[y].idRekomendasi},
-                                { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
-                            ]
-
-                            let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi, wherePIC);  
-                            fungsiRekomendasi.push(dataPICfungsi)
-                            rekomendasiRes.push(updatePIC.success)
-                        } else {
-                            let dataPICfungsi = [
-                                { key: 'ID_REKOMENDASI', value: dataPIC[y].idRekomendasi},
-                                { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
-                            ]
-
-                            let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi);  
-                            fungsiRekomendasi.push(dataPICfungsi)
-                            rekomendasiRes.push(updatePIC.success)                            
-                        }
-
-                    }
-
-                } else {
-                    let dataRekomendasiInsert = [
-                        { key: 'ID_TEMUAN', value: getRekomendasi[i].idTemuan},               
-                        { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi},
-                        { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL},
-                        { key: 'StatusTL', value: 'A0'},
-                        { key: 'DueDate', value: getRekomendasi[i].dueDate},
-                        { key: 'CreatedBy', value: createdBy},
-                    ]
-    
-                    let insertRek =  await RekomendasiModel.save(dataRekomendasiInsert);  
-                    rekomendasiRes.push(insertRek.success)
-                    dataRekomendasi.push(dataRekomendasiInsert)
-
-                    let dataPIC = getRekomendasi[i].PICfungsi
-                    for (let y = 0; y < dataPIC.length; y++) {
-                        let wherePIC = [{ key: 'ID_RF', value: dataPIC[y].idRF}]
-                        let checkPIC = await FungsiRekomendasiModel.getAll('ID_RF', wherePIC) 
-                        
-                        if (checkPIC.length > 0) {
-                            let dataPICfungsi = [
-                                { key: 'ID_REKOMENDASI', value: dataPIC[y].idRekomendasi},
-                                { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
-                            ]
-
-                            let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi, wherePIC);  
-                            fungsiRekomendasi.push(dataPICfungsi)
-                            rekomendasiRes.push(updatePIC.success)
-                        } else {
-                            let dataPICfungsi = [
-                                { key: 'ID_REKOMENDASI', value: dataPIC[y].idRekomendasi},
-                                { key: 'ID_FUNGSI', value: dataPIC[y].idFungsi}    
-                            ]
-
-                            let updatePIC =  await FungsiRekomendasiModel.save(dataPICfungsi);  
-                            fungsiRekomendasi.push(dataPICfungsi)
-                            rekomendasiRes.push(updatePIC.success)
-                        }
-
-                    }
-                
-                }
-            }
-        
-            let cekResponse = rekomendasiRes.every(myFunction);
-            function myFunction(value) {
-                return value == true;
-            }
-                
-            if (cekResponse == true) {
-            
-                postData = [ 
-                    {key:'Data Rekomendasi', value:dataRekomendasi},
-                    {key:'Data Fungsi Rekomendasi', value:fungsiRekomendasi},
-                ]
-
-                statusCode      = 200
-                responseCode    = '00'
-                message         = 'Post Rekomendasi Fungsi Controller'
-                acknowledge     = true
-                result          = postData
-            }
+            statusCode      = 200
+            responseCode    = '00'
+            message         = 'Update Rekomendasi Fungsi Controller'
+            acknowledge     = true
+            result          = 'BELUM GAN! SUSAH SEKALI'
             
         } else {
             statusCode      = 200
@@ -439,7 +362,7 @@ CreateLHAController.SubmitController = async(req, res, next) => {
     console.log(`├── ${log} :: Create LHA Data Controller`);
 
     try {
-        let { idLHA } = req.body
+        let { idLHA, createdBy } = req.body
         let whereLHA = [{key:'ID_LHA', value: idLHA}]
         let getLHA = await LHAModel.getAll('*', whereLHA)
     
@@ -496,11 +419,25 @@ CreateLHAController.SubmitController = async(req, res, next) => {
                                 Rek : dataRekomendasi
                             }]
 
-                            statusCode      = 200
-                            responseCode    = '00'
-                            message         = 'Submit LHA Fungsi Controller'
-                            acknowledge     = true
-                            result          = submitData
+                            let whereID = [{key:'ID_LHA', value:idLHA}]
+                            let nomorLHA = await LHAModel.getAll('NomorLHA', whereID)
+        
+                            let logData = [
+                                {key:'ID_LHA', value:idLHA},
+                                {key:'UserId', value:createdBy},
+                                {key:'Activity', value:'Submit LHA, Temuan & Rekomendasi to status A1 (OPEN)'},
+                                {key:'AdditionalInfo', value:'Menunggu tindak lanjut dari auditee.'},
+                                {key:'Type', value:'Submit'}
+                            ]
+                            let log = await LogActivityModel.save(logData);
+        
+                            if (log.success == true) {
+                                statusCode      = 200
+                                responseCode    = '00'
+                                message         = 'Submit LHA Fungsi Controller'
+                                acknowledge     = true
+                                result          = submitData      
+                            }
                         }
                     } 
                 } else {
