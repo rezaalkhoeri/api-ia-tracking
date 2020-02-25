@@ -1,7 +1,7 @@
 const CoreDB            = require('../lib/Coredb');
-const StatusModel         = {}
+const FungsiModel         = {}
 
-StatusModel.save = async (data, condition = []) => {
+FungsiModel.save = async (data, condition = []) => {
     let result  = null;
 
     CoreDB.setTable('tblm_fungsi');
@@ -14,33 +14,33 @@ StatusModel.save = async (data, condition = []) => {
     return result;
 }
 
-StatusModel.delete = async (condition) => {
+FungsiModel.delete = async (condition) => {
     CoreDB.setTable('tblm_fungsi');
 
     return await CoreDB.delete(condition);
 }
 
-StatusModel.getBy = async (fields = '*', condition, join = [], group = []) => {
+FungsiModel.getBy = async (fields = '*', condition, join = [], group = []) => {
     CoreDB.setTable('tblm_fungsi');
 
     return await CoreDB.getBy(fields, condition, join, group);
 }
 
-StatusModel.getAll = async (fields = '*', condition = [], join = [], group = [], sort = []) => {
+FungsiModel.getAll = async (fields = '*', condition = [], join = [], group = [], sort = []) => {
     CoreDB.setTable('tblm_fungsi');
 
     return await CoreDB.getAll(fields, condition, join, group, sort);
 }
 
-StatusModel.getPaging = async (fields = '*', condition = [], join = [], group = [], sort = [], page = 1) => {
+FungsiModel.getPaging = async (fields = '*', condition = [], join = [], group = [], sort = [], page = 1) => {
     CoreDB.setTable('tblm_fungsi');
 
     return await CoreDB.getPaging(fields, condition, join, group, sort, page, 2);
 }
 
-StatusModel.QueryCustom = async (query, value = []) => {
+FungsiModel.QueryCustom = async (query, value = []) => {
     return await CoreDB.query(query, value);
 }
 
 
-module.exports  = StatusModel;
+module.exports  = FungsiModel;
