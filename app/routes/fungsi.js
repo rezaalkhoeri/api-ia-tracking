@@ -7,6 +7,7 @@ router
     .all('/*', authentication)
     .get('/subfungsi', FungsiController.getSubFungsiController)
     .get('/subfungsi/:ID', FungsiController.getSubFungsiByIDController)
+    .get('/subfungsiByIDFungsi/:ID', FungsiController.getSubFungsiByIDFungsiController)
     .post('/subfungsi/crud', FungsiController.postSubFungsiController)
 
     .get('/', FungsiController.getFungsiController)

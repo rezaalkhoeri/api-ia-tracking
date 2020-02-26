@@ -140,7 +140,7 @@ FungsiController.getSubFungsiController = async(req, res, next) => {
 }
 
 FungsiController.getSubFungsiByIDController = async(req, res, next) => {
-    console.log(`├── ${log} :: Get Sub Fungsi Sub By ID Controller`);
+    console.log(`├── ${log} :: Get Sub Fungsi By ID Controller`);
 
     try{
         let id = req.params.ID
@@ -162,6 +162,29 @@ FungsiController.getSubFungsiByIDController = async(req, res, next) => {
         })
     }
 }
+
+FungsiController.getSubFungsiByIDFungsiController = async(req, res, next) => {
+    console.log(`├── ${log} :: Get Sub Fungsi By ID FUNGSI Controller`);
+
+    try{
+        let id = req.params.ID
+        let where = [{key:'ID_FUNGSI', value:id}]
+        let dbFungsi = await SubFungsiModel.getAll('*',where);
+
+        // success
+        res.status(200).send(
+            parseResponse(true, dbFungsi, '00', 'Get Fungsi By ID Controller Success')
+        )
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
 
 FungsiController.postSubFungsiController = async(req, res, next) => {
     console.log(`├── ${log} :: Post Fungsi Data Controller`);
