@@ -5,6 +5,10 @@ const FungsiController           = require('../controllers/Fungsi.controller')
 
 router
     .all('/*', authentication)
+    .get('/subfungsi', FungsiController.getSubFungsiController)
+    .get('/subfungsi/:ID', FungsiController.getSubFungsiByIDController)
+    .post('/subfungsi/crud', FungsiController.postSubFungsiController)
+
     .get('/', FungsiController.getFungsiController)
     .get('/:ID', FungsiController.getFungsiByIDController)
     .post('/crud', FungsiController.postFungsiController)

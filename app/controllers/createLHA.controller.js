@@ -13,17 +13,15 @@ CreateLHAController.createLHAController = async(req, res, next) => {
 
     try {
         let { nomorLHA, judulLHA, tglLHA, tipeLHA, createdBy, temuan } = req.body
-
+        
         // Upload File Data
-        if (!req.files || Object.keys(req.files).length === 0) {
-            statusCode      = 200
-            responseCode    = '40'
-            message         = 'No Files were uploaded !'
-            acknowledge     = false
-            result          = null
+        let filename = []
+        if (req.files.dokumenAudit.size == 0) {
+
         } else {
-            sampleFile = req.files.dokumenAudit;
-            uploadPath = __dirname+'./../public/Dokumen Audit/'+nomorLHA+'_'+sampleFile.name; 
+            sampleFile = req.files.dokumenAudit
+            filename.push(nomorLHA+'_'+sampleFile.name)
+            uploadPath = __dirname+'./../public/Dokumen LHA/'+nomorLHA+'_'+sampleFile.name
             
             sampleFile.mv(uploadPath, function(err) {
                 if (err) {
@@ -34,17 +32,92 @@ CreateLHAController.createLHAController = async(req, res, next) => {
                     result          = null        
                 }
             });
+        }
 
-            let condition = [{key:'NomorLHA', value:nomorLHA}] 
-            let check = await LHAModel.getAll('*', condition)
+        let condition = [{key:'NomorLHA', value:nomorLHA}] 
+        let check = await LHAModel.getAll('*', condition)
 
-            let getTemuan = JSON.parse(temuan)
+        let getTemuan = JSON.parse(temuan)
 
-            if ( ! check.length > 0) {
+        if ( ! check.length > 0) {
+            let dataLHA = [
+                { key:'NomorLHA', value:nomorLHA },
+                { key:'JudulLHA', value:judulLHA },
+                { key:'DokumenAudit', value: filename[0] },
+                { key:'TanggalLHA', value:tglLHA },
+                { key:'TipeLHA', value:tipeLHA },
+                { key:'StatusLHA', value: 'A0' },
+                // { key:'TotalTemuan', value: getTemuan.length },
+                { key:'CreatedBy', value:createdBy },
+            ]
+    
+            let insertLHA =  await LHAModel.save(dataLHA);
+    
+            if (insertLHA.success == true) {
+    
+                let whereLHA = [{ key:'NomorLHA', value:nomorLHA }]
+                let getLHA = await LHAModel.getBy('ID_LHA', whereLHA)
+                let idLHA = getLHA.ID_LHA
+    
+                let dataTemuan = []
+                for (let i = 0; i < getTemuan.length; i++) {
+                    dataTemuan.push([
+                        { key: 'ID_LHA', value: idLHA},
+                        { key: 'JudulTemuan', value: getTemuan[i].judulTemuan},
+                        { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi},
+                        { key: 'Nominal', value: getTemuan[i].nominal},
+                        { key: 'StatusTemuan', value: 'A0' },
+                        { key: 'CreatedBy', value: createdBy},
+                    ])
+                }
+    
+                let temuanRes = []
+                for (let x = 0; x < dataTemuan.length; x++) {
+                    let insertTemuan =  await TemuanModel.save(dataTemuan[x]);  
+                    temuanRes.push(insertTemuan.success)
+                }
+    
+                let temuanInsert = temuanRes.every(myFunction);
+                function myFunction(value) {
+                    return value == true;
+                }
+    
+                if (temuanInsert == true) {
+                    let logData = [
+                        {key:'ID_LHA', value:idLHA},
+                        {key:'UserId', value:createdBy},
+                        {key:'Activity', value:'Create New LHA & Temuan status A0 (DRAFT)'},
+                        {key:'AdditionalInfo', value:'Create LHA dengan nomor '+nomorLHA+' beserta '+dataTemuan.length+' temuan.'},
+                        {key:'Type', value:'New'}
+                    ]                        
+                    let log = await LogActivityModel.save(logData);
+    
+                    if (log.success == true) {
+                        postData = [
+                            {key:'DATA LHA', value: dataLHA},
+                            {key:'DATA Temuan', value: dataTemuan},
+                        ]
+        
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Create LHA Controller Success'
+                        acknowledge     = true
+                        result          = postData                                
+                    }
+                }    
+            }                    
+        } else {
+
+            let { action, id_lha } = req.body
+
+            if (action == 'update') {
+
+                let where = [{ key: 'ID_LHA', value: id_lha }]
+
                 let dataLHA = [
                     { key:'NomorLHA', value:nomorLHA },
                     { key:'JudulLHA', value:judulLHA },
-                    { key:'DokumenAudit', value: nomorLHA+'_'+sampleFile.name },
+                    { key:'DokumenAudit', value: filename[0] },
                     { key:'TanggalLHA', value:tglLHA },
                     { key:'TipeLHA', value:tipeLHA },
                     { key:'StatusLHA', value: 'A0' },
@@ -52,47 +125,64 @@ CreateLHAController.createLHAController = async(req, res, next) => {
                     { key:'CreatedBy', value:createdBy },
                 ]
         
-                let insertLHA =  await LHAModel.save(dataLHA);
-        
-                if (insertLHA.success == true) {
-        
+                let updateLHA =  await LHAModel.save(dataLHA, where);
+                
+                if (updateLHA.success == true) {        
+                    let getTemuan = JSON.parse(temuan)
                     let whereLHA = [{ key:'NomorLHA', value:nomorLHA }]
                     let getLHA = await LHAModel.getBy('ID_LHA', whereLHA)
                     let idLHA = getLHA.ID_LHA
-        
-                    let dataTemuan = []
-                    for (let i = 0; i < getTemuan.length; i++) {
-                        dataTemuan.push([
-                            { key: 'ID_LHA', value: idLHA},
-                            { key: 'JudulTemuan', value: getTemuan[i].judulTemuan},
-                            { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi},
-                            { key: 'Nominal', value: getTemuan[i].nominal},
-                            { key: 'StatusTemuan', value: 'A0' },
-                            { key: 'CreatedBy', value: createdBy},
-                        ])
-                    }
-        
+
                     let temuanRes = []
-                    for (let x = 0; x < dataTemuan.length; x++) {
-                        let insertTemuan =  await TemuanModel.save(dataTemuan[x]);  
-                        temuanRes.push(insertTemuan.success)
+                    let dataTemuan = []
+                    for (let y = 0; y < getTemuan.length; y++) {
+                        let whereTemuan = [{ key:'ID_TEMUAN', value:getTemuan[y].idTemuan }]
+                        let checkTemuan = await TemuanModel.getAll('ID_TEMUAN', whereTemuan)
+
+                        if (checkTemuan.length > 0) {
+                            let dataTemuanUpdate = [
+                                { key: 'ID_LHA', value: idLHA},
+                                { key: 'JudulTemuan', value: getTemuan[y].judulTemuan},
+                                { key: 'IndikasiBernilaiUang', value: getTemuan[y].indikasi},
+                                { key: 'Nominal', value: getTemuan[y].nominal},
+                                { key: 'StatusTemuan', value: 'A0' },
+                                { key: 'CreatedBy', value: createdBy},
+                            ]
+
+                            let updateTemuan =  await TemuanModel.save(dataTemuanUpdate, whereTemuan);  
+                            temuanRes.push(updateTemuan.success)
+                            dataTemuan.push(dataTemuanUpdate)
+                        } else {
+                            let dataTemuanInsert = [
+                                { key: 'ID_LHA', value: idLHA},
+                                { key: 'JudulTemuan', value: getTemuan[y].judulTemuan},
+                                { key: 'IndikasiBernilaiUang', value: getTemuan[y].indikasi},
+                                { key: 'Nominal', value: getTemuan[y].nominal},
+                                { key: 'StatusTemuan', value: 'A0' },
+                                { key: 'CreatedBy', value: createdBy},
+                            ]
+
+                            let insertTemuan =  await TemuanModel.save(dataTemuanInsert);  
+                            temuanRes.push(insertTemuan.success)
+                            dataTemuan.push(dataTemuanInsert)
+                        }
                     }
-        
-                    let temuanInsert = temuanRes.every(myFunction);
+            
+                    let temuanUpdate = temuanRes.every(myFunction);
                     function myFunction(value) {
                         return value == true;
                     }
         
-                    if (temuanInsert == true) {
+                    if (temuanUpdate == true) {
                         let logData = [
                             {key:'ID_LHA', value:idLHA},
                             {key:'UserId', value:createdBy},
-                            {key:'Activity', value:'Create New LHA & Temuan status A0 (DRAFT)'},
-                            {key:'AdditionalInfo', value:'Create LHA dengan nomor '+nomorLHA+' beserta '+dataTemuan.length+' temuan.'},
+                            {key:'Activity', value:'Edit LHA & Temuan status A0 (DRAFT)'},
+                            {key:'AdditionalInfo', value:'Edit data LHA dengan nomor '+nomorLHA+' beserta '+dataTemuan.length+' temuan.'},
                             {key:'Type', value:'New'}
-                        ]                        
+                        ]                            
                         let log = await LogActivityModel.save(logData);
-        
+
                         if (log.success == true) {
                             postData = [
                                 {key:'DATA LHA', value: dataLHA},
@@ -101,114 +191,21 @@ CreateLHAController.createLHAController = async(req, res, next) => {
             
                             statusCode      = 200
                             responseCode    = '00'
-                            message         = 'Create LHA Controller Success'
+                            message         = 'Update LHA Controller Success'
                             acknowledge     = true
-                            result          = postData                                
+                            result          = postData                                    
                         }
                     }    
-                }                    
-            } else {
-
-                let { action, id_lha } = req.body
-
-                if (action == 'update') {
-
-                    let where = [{ key: 'ID_LHA', value: id_lha }]
-
-                    let dataLHA = [
-                        { key:'NomorLHA', value:nomorLHA },
-                        { key:'JudulLHA', value:judulLHA },
-                        { key:'DokumenAudit', value: nomorLHA+'_'+sampleFile.name },
-                        { key:'TanggalLHA', value:tglLHA },
-                        { key:'TipeLHA', value:tipeLHA },
-                        { key:'StatusLHA', value: 'A0' },
-                        // { key:'TotalTemuan', value: getTemuan.length },
-                        { key:'CreatedBy', value:createdBy },
-                    ]
-            
-                    let updateLHA =  await LHAModel.save(dataLHA, where);
-                  
-                    if (updateLHA.success == true) {        
-                        let getTemuan = JSON.parse(temuan)
-                        let whereLHA = [{ key:'NomorLHA', value:nomorLHA }]
-                        let getLHA = await LHAModel.getBy('ID_LHA', whereLHA)
-                        let idLHA = getLHA.ID_LHA
-
-                        let temuanRes = []
-                        let dataTemuan = []
-                        for (let y = 0; y < getTemuan.length; y++) {
-                            let whereTemuan = [{ key:'ID_TEMUAN', value:getTemuan[y].idTemuan }]
-                            let checkTemuan = await TemuanModel.getAll('ID_TEMUAN', whereTemuan)
-
-                            if (checkTemuan.length > 0) {
-                                let dataTemuanUpdate = [
-                                    { key: 'ID_LHA', value: idLHA},
-                                    { key: 'JudulTemuan', value: getTemuan[y].judulTemuan},
-                                    { key: 'IndikasiBernilaiUang', value: getTemuan[y].indikasi},
-                                    { key: 'Nominal', value: getTemuan[y].nominal},
-                                    { key: 'StatusTemuan', value: 'A0' },
-                                    { key: 'CreatedBy', value: createdBy},
-                                ]
-
-                                let updateTemuan =  await TemuanModel.save(dataTemuanUpdate, whereTemuan);  
-                                temuanRes.push(updateTemuan.success)
-                                dataTemuan.push(dataTemuanUpdate)
-                            } else {
-                                let dataTemuanInsert = [
-                                    { key: 'ID_LHA', value: idLHA},
-                                    { key: 'JudulTemuan', value: getTemuan[y].judulTemuan},
-                                    { key: 'IndikasiBernilaiUang', value: getTemuan[y].indikasi},
-                                    { key: 'Nominal', value: getTemuan[y].nominal},
-                                    { key: 'StatusTemuan', value: 'A0' },
-                                    { key: 'CreatedBy', value: createdBy},
-                                ]
-
-                                let insertTemuan =  await TemuanModel.save(dataTemuanInsert);  
-                                temuanRes.push(insertTemuan.success)
-                                dataTemuan.push(dataTemuanInsert)
-                            }
-                        }
-                
-                        let temuanUpdate = temuanRes.every(myFunction);
-                        function myFunction(value) {
-                            return value == true;
-                        }
-            
-                        if (temuanUpdate == true) {
-                            let logData = [
-                                {key:'ID_LHA', value:idLHA},
-                                {key:'UserId', value:createdBy},
-                                {key:'Activity', value:'Edit LHA & Temuan status A0 (DRAFT)'},
-                                {key:'AdditionalInfo', value:'Edit data LHA dengan nomor '+nomorLHA+' beserta '+dataTemuan.length+' temuan.'},
-                                {key:'Type', value:'New'}
-                            ]                            
-                            let log = await LogActivityModel.save(logData);
-
-                            if (log.success == true) {
-                                postData = [
-                                    {key:'DATA LHA', value: dataLHA},
-                                    {key:'DATA Temuan', value: dataTemuan},
-                                ]
-                
-                                statusCode      = 200
-                                responseCode    = '00'
-                                message         = 'Update LHA Controller Success'
-                                acknowledge     = true
-                                result          = postData                                    
-                            }
-                        }    
-                    }
-
-                } else {
-                    // LHA already exists
-                    statusCode      = 200
-                    responseCode    = '44'
-                    message         = 'LHA already exists !'
-                    acknowledge     = false
-                    result          = null                    
                 }
-            }
 
+            } else {
+                // LHA already exists
+                statusCode      = 200
+                responseCode    = '44'
+                message         = 'LHA already exists !'
+                acknowledge     = false
+                result          = null                    
+            }
         }
 
         res.status(statusCode).send(

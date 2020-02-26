@@ -53,45 +53,16 @@ TLController.auditeeTLController = async(req, res, next) => {
             let checkTL = await TLModel.getAll('*', condition)
 
             if (checkTL.length > 0) {
+ 
+                let {catatanAuditee } = req.body
 
-                let { catatanAuditee } = req.body
-
-                if (!req.files || Object.keys(req.files).length === 0) {
-
-                    let { oldDokumen } = req.body 
-                    let dataTL = [
-                        { key:'ID_RF', value:idRF},
-                        { key:'DokumenTL', value: oldDokumen },
-                        { key:'CatatanAudit', value:catatanAuditee},
-                        { key:'StatusTL', value:'A0'},
-                        { key:'AuditeeBy', value:createdBy}
-                    ]
-
-                    let updateTL = await TLModel.save(dataTL, condition)
-                    
-                    if (updateTL.success == true) {
-                        let logData = [
-                            {key:'ID_LHA', value:getLHA.ID_LHA},
-                            {key:'UserId', value:createdBy},
-                            {key:'Activity', value:'Tindak Lanjut By Auditee'},
-                            {key:'AdditionalInfo', value:'Menambahkan tindak lanjut untuk Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
-                            {key:'Type', value:'New'}
-                        ]
-                        let log = await LogActivityModel.save(logData);
-                        
-                        if (log.success == true) {
-                            statusCode      = 200
-                            responseCode    = '00'
-                            message         = 'Insert TL Controller Success'
-                            acknowledge     = true
-                            result          = dataTL                                
-                        }
-                    }
-
-
-                } else {
+                let filename =[]
+                if (req.files == null) {
+                    filename.push(checkTL[0].DokumenTL)
+                } else {                   
                     sampleFile = req.files.dokumenTL;
-                    uploadPath = __dirname+'./../public/Dokumen TL/'+'TL'+'_'+sampleFile.name; 
+                    filename.push('TL_'+sampleFile.name)
+                    uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
                     
                     sampleFile.mv(uploadPath, function(err) {
                         if (err) {
@@ -102,50 +73,47 @@ TLController.auditeeTLController = async(req, res, next) => {
                             result          = null        
                         }
                     });
-        
-                    let dataTL = [
-                        { key:'ID_RF', value:idRF},
-                        { key:'DokumenTL', value: sampleFile.name },
-                        { key:'CatatanAudit', value:catatanAuditee},
-                        { key:'StatusTL', value:'A0'},
-                        { key:'AuditeeBy', value:createdBy}
-                    ]
-        
-                    let updateTL = await TLModel.save(dataTL, condition)
-                    
-                    if (updateTL.success == true) {
-                        let logData = [
-                            {key:'ID_LHA', value:getLHA.ID_LHA},
-                            {key:'UserId', value:createdBy},
-                            {key:'Activity', value:'Tindak Lanjut By Auditee'},
-                            {key:'AdditionalInfo', value:'Menambahkan tindak lanjut untuk Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
-                            {key:'Type', value:'New'}
-                        ]
-                        let log = await LogActivityModel.save(logData);
+                }
+                
+                let dataTL = [
+                    { key:'ID_RF', value:idRF},
+                    { key:'DokumenTL', value: filename[0] },
+                    { key:'CatatanAudit', value:catatanAuditee},
+                    { key:'StatusTL', value:'A0'},
+                    { key:'AuditeeBy', value:createdBy}
+                ]
 
-                        if (log.success == true) {
-                            statusCode      = 200
-                            responseCode    = '00'
-                            message         = 'Insert TL Controller Success'
-                            acknowledge     = true
-                            result          = dataTL                                
-                        }
+                let updateTL = await TLModel.save(dataTL, condition)
+                    
+                if (updateTL.success == true) {
+                    let logData = [
+                        {key:'ID_LHA', value:getLHA.ID_LHA},
+                        {key:'UserId', value:createdBy},
+                        {key:'Activity', value:'Tindak Lanjut By Auditee'},
+                        {key:'AdditionalInfo', value:'Update data tindak lanjut untuk Rekomendasi : '+getRek.JudulRekomendasi+', Judul Temuan : '+getTemuan.JudulTemuan+'.'},
+                        {key:'Type', value:'New'}
+                    ]
+                    let log = await LogActivityModel.save(logData);
+                    
+                    if (log.success == true) {
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Insert TL Controller Success'
+                        acknowledge     = true
+                        result          = dataTL
                     }
                 }
-
-
+       
             } else {
                 let { catatanAuditee, createdBy } = req.body
 
-                if (!req.files || Object.keys(req.files).length === 0) {
-                    statusCode      = 200
-                    responseCode    = '40'
-                    message         = 'No Files were uploaded !'
-                    acknowledge     = false
-                    result          = null
-                } else {
+                let filename = []
+                if (req.files == null) {
+                    
+                } else {                    
                     sampleFile = req.files.dokumenTL;
-                    uploadPath = __dirname+'./../public/Dokumen TL/'+'TL'+'_'+sampleFile.name; 
+                    filename.push('TL_'+sampleFile.name)
+                    uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
                     
                     sampleFile.mv(uploadPath, function(err) {
                         if (err) {
@@ -156,10 +124,11 @@ TLController.auditeeTLController = async(req, res, next) => {
                             result          = null        
                         }
                     });
+                }
         
                     let dataTL = [
                         { key:'ID_RF', value:idRF},
-                        { key:'DokumenTL', value: sampleFile.name },
+                        { key:'DokumenTL', value: filename[0] },
                         { key:'CatatanAudit', value:catatanAuditee},
                         { key:'StatusTL', value:'A0'},
                         { key:'AuditeeBy', value:createdBy}
@@ -182,11 +151,9 @@ TLController.auditeeTLController = async(req, res, next) => {
                             responseCode    = '00'
                             message         = 'Insert TL Controller Success'
                             acknowledge     = true
-                            result          = dataTL                                
+                            result          = dataTL
                         }
-                    }
-                }
-                   
+                    }                   
             }
                 
         } else if(action == 'submit') {
@@ -473,7 +440,7 @@ TLController.perpanjangDueDateController = async(req, res, next) => {
                     {key:'ID_LHA', value:dataLHA.ID_LHA},
                     {key:'UserId', value:createdBy},
                     {key:'Activity', value:'Perpanjang Due Date Rekomendasi'},
-                    {key:'AdditionalInfo', value:'Perpanjang Due Date Rekomendasi '+dataRek.DueDate+' to '+ moment(dueDate).format('YYYY-MM-DD')},
+                    {key:'AdditionalInfo', value:'Perpanjang Due Date Rekomendasi '+ moment(dataRek.DueDate).format('DD MMMM YYYY')+' to '+ moment(dueDate).format('DD MMMM YYYY')},
                     {key:'Type', value:'Approval'}
                 ]
                 let log = await LogActivityModel.save(logData);
