@@ -539,7 +539,7 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                     responseCode    = '00'
                     message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
                     acknowledge     = false
-                    result          = dataFungsi                                   
+                    result          = dataFungsi
                 }
             }
         }
@@ -558,5 +558,6 @@ LHAController.editPICfungsiController = async(req, res, next) => {
         })
     }
 }
+
 
 module.exports = LHAController

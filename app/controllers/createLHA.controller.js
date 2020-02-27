@@ -16,9 +16,9 @@ CreateLHAController.createLHAController = async(req, res, next) => {
         
         // Upload File Data
         let filename = []
-        if (req.files.dokumenAudit.size == 0) {
+        if (req.files == null) {
 
-        } else {
+        } else {                   
             sampleFile = req.files.dokumenAudit
             filename.push(nomorLHA+'_'+sampleFile.name)
             uploadPath = __dirname+'./../public/Dokumen LHA/'+nomorLHA+'_'+sampleFile.name
