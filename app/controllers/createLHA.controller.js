@@ -233,7 +233,7 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
 
             let { rekomendasi } = req.body
             let getRekomendasi = JSON.parse(rekomendasi)
-    
+            
             let dataRekomendasi = []
             let dataPICFungsi = []
             for (let i = 0; i < getRekomendasi.length; i++) {
@@ -248,13 +248,13 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
     
                 dataPICFungsi.push(getRekomendasi[i].PICfungsi)
             }
-    
+                 
             let insertRekomendasi = []
             for (let z = 0; z < dataRekomendasi.length; z++) {
                 let rekomendasiSave = await RekomendasiModel.save(dataRekomendasi[z])
                 insertRekomendasi.push(rekomendasiSave.success)
             }
-    
+               
             let cekRekomendasi = insertRekomendasi.every(myFunction);
             function myFunction(value) {
                 return value == true;
@@ -285,8 +285,8 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
                     for (let x = 0; x < dataPICFungsi[i].length; x++) {
                         fungsiRekomendasi.push([
                             { key: 'ID_REKOMENDASI', value: merged[i].ID_REKOMENDASI},
-                            { key: 'ID_FUNGSI', value: dataPICFungsi[i][x].idFungsi},
-                        ])    
+                            { key: 'ID_SUBFUNGSI', value: dataPICFungsi[i][x].idSubFungsi},
+                        ])
                     }
                 }
 
@@ -321,7 +321,7 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
                         responseCode    = '00'
                         message         = 'Add Rekomendasi Fungsi Controller'
                         acknowledge     = true
-                        result          = postData                            
+                        result          = fungsiRekomendasi
                     }
                 }
             }
