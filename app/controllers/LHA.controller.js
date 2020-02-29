@@ -10,6 +10,16 @@ const moment                    = require('moment');
 const parseResponse             = require('../helpers/parse-response')
 const log                       = 'LHA controller';
 
+function getUnique(arr, comp) {
+    const unique = arr
+    .map(e => e[comp])
+    // store the keys of the unique objects
+    .map((e, i, final) => final.indexOf(e) === i && i)        
+    // eliminate the dead keys & store unique objects
+    .filter(e => arr[e]).map(e => arr[e]);        
+    return unique;
+}
+
 LHAController.getLHAController = async(req, res, next) => {
     console.log(`├── ${log} :: Get LHA Controller`);
 
@@ -187,10 +197,14 @@ LHAController.getTemuanController = async(req, res, next) => {
             let pic = []
             for (let i = 0; i < dataRekomendasi.length; i++) {
                 wherePIC = dataRekomendasi[i].ID_REKOMENDASI
-                sql = `SELECT tblt_rekomendasi_fungsi.ID_RF, tblt_rekomendasi.ID_REKOMENDASI, tblm_fungsi.* FROM tblt_rekomendasi 
-                        LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
-                        LEFT JOIN tblm_fungsi ON tblt_rekomendasi_fungsi.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
-                        WHERE tblt_rekomendasi.ID_REKOMENDASI =`+wherePIC
+                sql = `SELECT tblt_rekomendasi_fungsi.ID_RF, tblt_rekomendasi.ID_REKOMENDASI, 
+                tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi 
+                FROM tblt_rekomendasi 
+                LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
+                LEFT JOIN tblm_sub_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
+                LEFT JOIN tblm_fungsi ON tblm_fungsi.ID_FUNGSI = tblm_sub_fungsi.ID_FUNGSI 
+                WHERE tblt_rekomendasi.ID_REKOMENDASI =`+wherePIC
+
                 dataPIC = await FungsiRekomendasiModel.QueryCustom(sql)
                 pic.push(dataPIC.rows)
             }
@@ -229,15 +243,30 @@ LHAController.getTemuanController = async(req, res, next) => {
                     CreatedBy          : data.CreatedBy
                 };
             });
-        
+
+            NamaFungsi = []
+            NamaFungsi.push(_.map(pic[0], function(data){
+                return rekomendasiData = {
+                    NamaFungsi     : data.NamaFungsi,
+                };
+            }))
+            NamaSub = []
+            NamaSub.push(_.map(pic[0], function(data){
+                return rekomendasiData = {
+                    NamaSub     : data.NamaSub,
+                };
+            }))
+            
             result.push([{
                 temuan : resultTemuan,
                 rekomendasi : resultRekomendasi,
-                pic : pic,
-                TL : tindakLanjut
+                pic : { 
+                    dataFungsi : getUnique(NamaFungsi[0],'NamaFungsi'),
+                    dataSub : NamaSub[0]
+                },
+                TL : tindakLanjut[0]
             }])            
         }
-
         
         // success
         res.status(200).send(
@@ -296,9 +325,10 @@ LHAController.getRekomendasibyIDController = async(req, res, next) => {
         let condition = [{ key:'ID_Rekomendasi', value:idRekomendasi}]
         let db = await RekomendasiModel.getAll('*', condition);
 
-        let sql = `SELECT tblm_fungsi.NamaFungsi FROM tblm_fungsi 
-                    JOIN tblt_rekomendasi_fungsi ON tblm_fungsi.ID_FUNGSI = tblt_rekomendasi_fungsi.ID_FUNGSI
-                    WHERE tblt_rekomendasi_fungsi.ID_REKOMENDASI =` + idRekomendasi
+        let sql = `SELECT tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi FROM tblm_sub_fungsi 
+        JOIN tblm_fungsi ON tblm_sub_fungsi.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
+        JOIN tblt_rekomendasi_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
+        WHERE tblt_rekomendasi_fungsi.ID_REKOMENDASI =` + idRekomendasi
 
         let pic = await FungsiRekomendasiModel.QueryCustom(sql);
 
@@ -315,10 +345,23 @@ LHAController.getRekomendasibyIDController = async(req, res, next) => {
                 CreatedBy          : data.CreatedBy
             };
         });
-    
+
+        resultFungsi = _.map(pic.rows, function(data){
+            return rekomendasiData = {
+                NamaFungsi     : data.NamaFungsi,
+            };
+        });
+       
+        resultSubFungsi = _.map(pic.rows, function(data){
+            return rekomendasiData = {
+                SubFungsi     : data.NamaSub,
+            };
+        });
+
         let postData = [{
             rekomendasi : resultRekomendasi,
-            PIC : pic.rows
+            NamaFungsi : getUnique(resultFungsi,'NamaFungsi'),
+            NamaSub : resultSubFungsi
         }]
  
         // success
