@@ -501,7 +501,7 @@ LHAController.editPICfungsiController = async(req, res, next) => {
             let deleteOldPIC = await FungsiRekomendasiModel.delete(where)
 
             if (deleteOldPIC.success = true) {
-                let { picFungsi } = req.body
+                let { picFungsi, dueDate } = req.body
 
                 let GetPicFungsi = JSON.parse(picFungsi)
 
@@ -509,9 +509,12 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                 for (let i = 0; i < GetPicFungsi.length; i++) {
                     dataFungsi.push([
                         {key:'ID_REKOMENDASI', value:idRekomendasi},
-                        {key:'ID_FUNGSI', value:GetPicFungsi[i].idFungsi}
+                        {key:'ID_SUBFUNGSI', value:GetPicFungsi[i].idSubFungsi}
                     ])
                 }
+
+                let dueDateData = [{key:'DueDate', value:dueDate}]
+                let updateDate = await RekomendasiModel.save(dueDateData, where)
 
                 let updateResult = []
                 for (let x = 0; x < dataFungsi.length; x++) {
@@ -524,7 +527,7 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                     return value == true;
                 }
 
-                if (updatePICFungsi == true) {
+                if (updatePICFungsi && updateDate.success == true) {
                     let logData = [
                         {key:'ID_LHA', value:dataLHA.ID_LHA},
                         {key:'UserId', value:createdBy},
@@ -544,7 +547,7 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                 }
             }
         } else {
-            let { picFungsi } = req.body
+            let { picFungsi, dueDate } = req.body
 
             let GetPicFungsi = JSON.parse(picFungsi)
 
@@ -552,9 +555,12 @@ LHAController.editPICfungsiController = async(req, res, next) => {
             for (let i = 0; i < GetPicFungsi.length; i++) {
                 dataFungsi.push([
                     {key:'ID_REKOMENDASI', value:idRekomendasi},
-                    {key:'ID_FUNGSI', value:GetPicFungsi[i].idFungsi}
+                    {key:'ID_SUBFUNGSI', value:GetPicFungsi[i].idSubFungsi}
                 ])
             }
+
+            let dueDateData = [{key:'DueDate', value:dueDate}]
+            let updateDate = await RekomendasiModel.save(dueDateData, where)
 
             let updateResult = []
             for (let x = 0; x < dataFungsi.length; x++) {
@@ -567,7 +573,7 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                 return value == true;
             }
 
-            if (updatePICFungsi == true) {
+            if (updatePICFungsi && updateDate.success == true) {
                 let logData = [
                     {key:'ID_LHA', value:dataLHA.ID_LHA},
                     {key:'UserId', value:createdBy},
