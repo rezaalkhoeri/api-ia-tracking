@@ -10,5 +10,6 @@ router
     .post('/closeRekomendasi', TLController.closeRekomendasiController)
     .post('/rejectTLRekomendasi', TLController.rejectTLRekomendasiController)
     .post('/perpanjangDueDate', TLController.perpanjangDueDateController)
+    .post('/uploadFile', TLController.auditorUploadFileController)
 
 module.exports = router

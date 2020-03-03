@@ -462,4 +462,88 @@ TLController.perpanjangDueDateController = async(req, res, next) => {
     }
 }
 
+TLController.auditorUploadFileController = async(req, res, next) => {
+    console.log(`├── ${log} :: Auditor Upload File Rekomendasi Controller`);
+
+    try{
+
+        if (req.files == null) {
+            statusCode      = 200
+            responseCode    = '99'
+            message         = 'File tidak ditemukan!'
+            acknowledge     = false
+            result          = null
+        } else {
+            let {idRekomendasi, uploadFile, createdBy } = req.body
+
+            let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+            let dataRek = await RekomendasiModel.getBy('*', whereR)
+            let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+            let dataTemuan = await TemuanModel.getBy('*', whereT)
+            let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
+            let dataLHA = await LHAModel.getBy('*', whereL)
+
+            sampleFile = req.files.uploadFile
+            filename = 'TL_'+sampleFile.name
+            uploadPath = __dirname+'./../public/Dokumen TL/'+filename
+            
+            sampleFile.mv(uploadPath, function(err) {
+                if (err) {
+                    statusCode      = 200
+                    responseCode    = '41'
+                    message         = 'Upload dokumen gagal !'
+                    acknowledge     = false
+                    result          = null        
+                }
+            });
+
+            let whereRekomendasi = [{key:'ID_RF', value:idRekomendasi}]
+            let fileData = [{key:'DokumenTL', value:filename}]
+            let upload = await TLModel.save(fileData, whereRekomendasi)
+
+            if (upload.success == true) {
+                let logData = [
+                    {key:'ID_LHA', value:dataLHA.ID_LHA},
+                    {key:'UserId', value:createdBy},
+                    {key:'Activity', value:'Upload File Tindak Lanjut Rekomendasi By Auditor'},
+                    {key:'AdditionalInfo', value:'Upload File pada Rekomendasi '+dataRek.JudulRekomendasi+', dan Temuan '+dataTemuan.JudulTemuan+'.'},
+                    {key:'Type', value:'Approval'}
+                ]
+                let log = await LogActivityModel.save(logData);
+                
+                if (log.success == true) {
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Auditor Upload File Controller Success!'
+                    acknowledge     = true
+                    result          = fileData                        
+                } else {
+                    statusCode      = 200
+                    responseCode    = '99'
+                    message         = 'Auditor Upload File Controller Gagal!'
+                    acknowledge     = false
+                    result          = null
+                }                 
+            } else {
+                statusCode      = 200
+                responseCode    = '99'
+                message         = 'Auditor Upload File Controller Gagal!'
+                acknowledge     = false
+                result          = null
+            }
+        }
+
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
 module.exports = TLController
