@@ -16,5 +16,6 @@ router
     .post('/search', LHAController.searchLHAController)
     .post('/editFungsiRekomendasi', LHAController.editPICfungsiController)
     .post('/logActivity', LogActivityController.getLogActivity)
+    .post('/deleteLHA', LHAController.deleteLHAController)
 
 module.exports = router

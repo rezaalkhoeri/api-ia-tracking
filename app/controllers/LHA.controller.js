@@ -608,5 +608,217 @@ LHAController.editPICfungsiController = async(req, res, next) => {
     }
 }
 
+LHAController.deleteLHAController = async(req, res, next) => {
+    console.log(`├── ${log} :: Delete LHA Controller`);
+
+    try{
+        let {idLHA, deletedBy} = req.body
+
+        let where = [{key:'ID_LHA', value:idLHA}]
+        let getLHA = await LHAModel.getAll('*', where)
+
+        if (getLHA.length > 0) {
+            let getTemuan = await TemuanModel.getAll('*', where)
+
+            if (getTemuan.length > 0) {       
+                let dataRekomendasi = []
+                for (let i = 0; i < getTemuan.length; i++) {
+                    let whereT = [{key:'ID_TEMUAN', value:getTemuan[i].ID_TEMUAN}]
+                    let getRekomendasi = await RekomendasiModel.getAll('*', whereT)
+                    if (getRekomendasi.length > 0) {
+                        dataRekomendasi.push(getRekomendasi)                        
+                    }
+                }
+
+                if (dataRekomendasi.length > 0) {
+                    let dataRekFungsi =[]
+                    for (let x = 0; x < dataRekomendasi.length; x++) {
+                        let whereR = [{key:'ID_REKOMENDASI', value:dataRekomendasi[x][0].ID_REKOMENDASI}]
+                        let getRekFungsi = await FungsiRekomendasiModel.getAll('*', whereR)
+                        if (getRekFungsi.length > 0) {
+                            dataRekFungsi.push(getRekFungsi)
+                        }    
+                    }
+
+                    if (dataRekFungsi.length > 0) {
+
+                        let deleteLHA = await LHAModel.delete(where)
+                        let hasil = []
+                        for (let i = 0; i < getTemuan.length; i++) {
+                            let idTemuan = [{key:'ID_TEMUAN',value:getTemuan[i].ID_TEMUAN}]
+                            let deleteTemuan = await TemuanModel.delete(idTemuan)
+                            hasil.push(deleteTemuan.success)
+                        }    
+                        for (let x = 0; x < dataRekomendasi.length; x++) {
+                            let whereIDrek = [{key:'ID_REKOMENDASI', value:dataRekomendasi[x][0].ID_REKOMENDASI}]                            
+                            let deleteRek = await RekomendasiModel.delete(whereIDrek)
+                            hasil.push(deleteRek.success)
+                        }
+                        for (let z = 0; z < dataRekFungsi.length; z++) {
+                            let whereIDRF = [{key:'ID_RF', value:dataRekFungsi[z][0].ID_RF}]
+                            let deleteRF = await FungsiRekomendasiModel.delete(whereIDRF)
+                            hasil.push(deleteRF.success)
+                        }
+
+                        let hasilDelete = hasil.every(myFunction);
+                        function myFunction(value) {
+                            return value == true;
+                        }                    
+    
+                        let logData = [
+                            {key:'ID_LHA', value:getLHA[0].ID_LHA},
+                            {key:'UserId', value:deletedBy},
+                            {key:'Activity', value:'Delete LHA'},
+                            {key:'AdditionalInfo', value:'LHA '+getLHA[0].JudulLHA+' beserta '+getTemuan.length+' temuan & '+dataRekomendasi.length+' rekomendasi dihapus. '},
+                            {key:'Type', value:'Delete'}
+                        ]
+                        let log = await LogActivityModel.save(logData);
+         
+                        if (deleteLHA.success && hasilDelete && log.success == true ) {
+                            // only delete LHA
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Delete LHA Controller Success!'
+                            acknowledge     = true
+                            result          = logData                    
+                        } else {
+                            // only delete LHA
+                            statusCode      = 200
+                            responseCode    = '99'
+                            message         = 'Delete LHA Controller Error!'
+                            acknowledge     = false
+                            result          = null                    
+                        }
+                    } else {
+                        let deleteLHA = await LHAModel.delete(where)
+                        let hasil = []
+                        for (let i = 0; i < getTemuan.length; i++) {
+                            let idTemuan = [{key:'ID_TEMUAN',value:getTemuan[i].ID_TEMUAN}]
+                            let deleteTemuan = await TemuanModel.delete(idTemuan)
+                            hasil.push(deleteTemuan.success)
+                        }    
+
+                        for (let x = 0; x < dataRekomendasi.length; x++) {
+                            let whereIDrek = [{key:'ID_REKOMENDASI', value:dataRekomendasi[x][0].ID_REKOMENDASI}]
+                            let deleteRek = await RekomendasiModel.delete(whereIDrek)
+                            hasil.push(deleteRek.success)
+                        }
+
+                        let hasilDelete = hasil.every(myFunction);
+                        function myFunction(value) {
+                            return value == true;
+                        }                    
+    
+                        let logData = [
+                            {key:'ID_LHA', value:getLHA[0].ID_LHA},
+                            {key:'UserId', value:deletedBy},
+                            {key:'Activity', value:'Delete LHA'},
+                            {key:'AdditionalInfo', value:'LHA '+getLHA[0].JudulLHA+' beserta '+getTemuan.length+' temuan & '+dataRekomendasi.length+' rekomendasi dihapus. '},
+                            {key:'Type', value:'Delete'}
+                        ]
+                        let log = await LogActivityModel.save(logData);
+         
+                        if (deleteLHA.success && hasilDelete && log.success == true ) {
+                            // only delete LHA
+                            statusCode      = 200
+                            responseCode    = '00'
+                            message         = 'Delete LHA Controller Success!'
+                            acknowledge     = true
+                            result          = logData                    
+                        } else {
+                            // only delete LHA
+                            statusCode      = 200
+                            responseCode    = '99'
+                            message         = 'Delete LHA Controller Error!'
+                            acknowledge     = false
+                            result          = null                    
+                        }   
+                    }
+                } else {
+                    let deleteLHA = await LHAModel.delete(where)
+                    let hasilTemuan = []
+                    for (let i = 0; i < getTemuan.length; i++) {
+                        let idTemuan = [{key:'ID_TEMUAN',value:getTemuan[i].ID_TEMUAN}]
+                        let deleteLHA = await TemuanModel.delete(idTemuan)
+                        hasilTemuan.push(deleteLHA.success)
+                    }
+
+                    let hasilDelete = hasilTemuan.every(myFunction);
+                    function myFunction(value) {
+                        return value == true;
+                    }    
+
+                    let logData = [
+                        {key:'ID_LHA', value:getLHA[0].ID_LHA},
+                        {key:'UserId', value:deletedBy},
+                        {key:'Activity', value:'Delete LHA'},
+                        {key:'AdditionalInfo', value:'LHA '+getLHA[0].JudulLHA+' dan '+getTemuan.length+' temuan dihapus. '},
+                        {key:'Type', value:'Delete'}
+                    ]
+                    let log = await LogActivityModel.save(logData);
+     
+                    if (deleteLHA.success && hasilDelete && log.success == true ) {
+                        // only delete LHA
+                        statusCode      = 200
+                        responseCode    = '00'
+                        message         = 'Delete LHA Controller Success!'
+                        acknowledge     = true
+                        result          = logData                    
+                    } else {
+                        // only delete LHA
+                        statusCode      = 200
+                        responseCode    = '99'
+                        message         = 'Delete LHA Controller Error!'
+                        acknowledge     = false
+                        result          = null                    
+                    }                   
+                }             
+            } else {
+                let deleteLHA = await LHAModel.delete(where)
+                let logData = [
+                    {key:'ID_LHA', value:getLHA[0].ID_LHA},
+                    {key:'UserId', value:deletedBy},
+                    {key:'Activity', value:'Delete LHA'},
+                    {key:'AdditionalInfo', value:'LHA '+getLHA[0].JudulLHA+' dihapus.'},
+                    {key:'Type', value:'Delete'}
+                ]
+                let log = await LogActivityModel.save(logData);
+
+                if (deleteLHA.success && log.success == true ) {
+                    // only delete LHA
+                    statusCode      = 200
+                    responseCode    = '00'
+                    message         = 'Delete LHA Controller Success!'
+                    acknowledge     = true
+                    result          = logData                    
+                } else {
+                    // only delete LHA
+                    statusCode      = 200
+                    responseCode    = '99'
+                    message         = 'Delete LHA Controller Error!'
+                    acknowledge     = false
+                    result          = null                    
+                }
+            }
+        } else {
+            statusCode      = 200
+            responseCode    = '40'
+            message         = 'LHA tidak ditemukan!'
+            acknowledge     = false
+            result          = null
+        }
+        // return response
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+    } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
 
 module.exports = LHAController
