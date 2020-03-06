@@ -184,39 +184,12 @@ LHAController.getTemuanController = async(req, res, next) => {
 
         let whereTemuan = []
         for (let y = 0; y < dbTemuan.length; y++) {
-            whereTemuan.push([
-                { key:'ID_TEMUAN', value: dbTemuan[y].ID_TEMUAN }
-            ])
+            whereTemuan.push([{ key:'ID_TEMUAN', value: dbTemuan[y].ID_TEMUAN }])           
         }
 
         let result = []
         for (let x = 0; x < whereTemuan.length; x++) {   
-            dataTemuan = await TemuanModel.getAll('*', whereTemuan[x])            
-            dataRekomendasi = await RekomendasiModel.getAll('*', whereTemuan[x])
-
-            let pic = []
-            for (let i = 0; i < dataRekomendasi.length; i++) {
-                wherePIC = dataRekomendasi[i].ID_REKOMENDASI
-                sql = `SELECT tblt_rekomendasi_fungsi.ID_RF, tblt_rekomendasi.ID_REKOMENDASI, 
-                tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi 
-                FROM tblt_rekomendasi 
-                LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
-                LEFT JOIN tblm_sub_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
-                LEFT JOIN tblm_fungsi ON tblm_fungsi.ID_FUNGSI = tblm_sub_fungsi.ID_FUNGSI 
-                WHERE tblt_rekomendasi.ID_REKOMENDASI =`+wherePIC
-
-                dataPIC = await FungsiRekomendasiModel.QueryCustom(sql)
-                pic.push(dataPIC.rows)
-            }
-
-            let tindakLanjut = []
-            for (let i = 0; i < dataRekomendasi.length; i++) {
-                whereIDRF = dataRekomendasi[i].ID_REKOMENDASI
-                sql = `SELECT * FROM tblt_rekomendasi_tindaklanjut WHERE tblt_rekomendasi_tindaklanjut.ID_RF =`+whereIDRF
-                dataTL = await TLModel.QueryCustom(sql)
-                tindakLanjut.push(dataTL.rows)
-            }
-
+            dataTemuan = await TemuanModel.getAll('*', whereTemuan[x])
             resultTemuan = _.map(dataTemuan, function(data){
                 return temuanData = {
                     ID_TEMUAN               : data.ID_TEMUAN,
@@ -229,7 +202,8 @@ LHAController.getTemuanController = async(req, res, next) => {
                     CreatedBy               : data.CreatedBy
                 };
             });
-    
+
+            dataRekomendasi = await RekomendasiModel.getAll('*', whereTemuan[x])            
             resultRekomendasi = _.map(dataRekomendasi, function(data){
                 return rekomendasiData = {
                     ID_REKOMENDASI     : data.ID_REKOMENDASI,
@@ -244,28 +218,63 @@ LHAController.getTemuanController = async(req, res, next) => {
                 };
             });
 
-            NamaFungsi = []
-            NamaFungsi.push(_.map(pic[0], function(data){
-                return rekomendasiData = {
-                    NamaFungsi     : data.NamaFungsi,
-                };
-            }))
-            NamaSub = []
-            NamaSub.push(_.map(pic[0], function(data){
-                return rekomendasiData = {
-                    NamaSub     : data.NamaSub,
-                };
-            }))
-            
-            result.push([{
-                temuan : resultTemuan,
-                rekomendasi : resultRekomendasi,
-                pic : { 
-                    dataFungsi : getUnique(NamaFungsi[0],'NamaFungsi'),
-                    dataSub : NamaSub[0]
-                },
-                TL : tindakLanjut[0]
-            }])            
+            // PIC
+            let pic =[]
+            for (let i = 0; i < dataRekomendasi.length; i++) {
+                wherePIC = dataRekomendasi[i].ID_REKOMENDASI
+                sql = `SELECT tblt_rekomendasi_fungsi.ID_RF, tblt_rekomendasi.ID_REKOMENDASI, 
+                tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi 
+                FROM tblt_rekomendasi 
+                LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
+                LEFT JOIN tblm_sub_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
+                LEFT JOIN tblm_fungsi ON tblm_fungsi.ID_FUNGSI = tblm_sub_fungsi.ID_FUNGSI 
+                WHERE tblt_rekomendasi.ID_REKOMENDASI =`+wherePIC
+
+                dataPIC = await FungsiRekomendasiModel.QueryCustom(sql)
+                pic.push(dataPIC.rows)
+            }
+
+            let NamaFungsi = []
+            for (let x = 0; x < pic.length; x++) {
+                let mappingFungsi = _.uniqBy(_.map(pic[x], function(data){
+                        return fungsi = {
+                            NamaFungsi     : data.NamaFungsi,
+                        };
+                    }),
+                'NamaFungsi')
+                NamaFungsi.push(mappingFungsi)        
+            }
+
+            let NamaSub = []
+            for (let x = 0; x < pic.length; x++) {
+                let mappingSub = _.map(pic[x], function(data){
+                    return sub = {
+                        NamaSub     : data.NamaSub,
+                    };
+                })
+                NamaSub.push(mappingSub)        
+            }
+
+            // Tindak Lanjut
+            tindakLanjut = []
+            for (let i = 0; i < dataRekomendasi.length; i++) {
+                whereIDRF = dataRekomendasi[i].ID_REKOMENDASI
+                sql = `SELECT * FROM tblt_rekomendasi_tindaklanjut WHERE tblt_rekomendasi_tindaklanjut.ID_RF =`+whereIDRF
+                dataTL = await TLModel.QueryCustom(sql)
+                tindakLanjut.push(dataTL.rows)
+            }
+
+            result.push(
+                {
+                    temuan : resultTemuan,
+                    rekomendasi : resultRekomendasi,
+                    pic : {
+                        dataFungsi : NamaFungsi,
+                        dataSub : NamaSub,
+                    },
+                    TL : tindakLanjut
+                }
+            )
         }
         
         // success
