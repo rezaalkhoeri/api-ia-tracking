@@ -131,6 +131,15 @@ PICController.postPICController = async(req, res, next) => {
                 )
             }                
 
+        } else if (action = "delete"){
+            let { id } = req.body 
+            let where = [{key:'ID', value:id}]
+            let hapus =  await PICModel.delete(where);
+            if (hapus.success == true) {
+                res.status(200).send(
+                    parseResponse(true, where, '00', 'Delete PIC Data Controller Success')
+                )
+            }
         } else {
             let data = [
                 {key:'response', value:'404'},

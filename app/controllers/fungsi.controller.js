@@ -101,6 +101,16 @@ FungsiController.postFungsiController = async(req, res, next) => {
                 )
             }                
 
+        } else if (action == "delete") {
+            let { id } = req.body 
+            let where = [{key:'ID_FUNGSI', value:id}]
+            let hapus =  await FungsiModel.delete(where)
+            
+            if (hapus.success == true) {
+                res.status(200).send(
+                    parseResponse(true, where, '00', 'Delete Fungsi Data Controller Success')
+                )
+            }
         } else {
             res.status(200).send(
                 parseResponse(true, null, '404', 'Request Not Found')
@@ -239,10 +249,19 @@ FungsiController.postSubFungsiController = async(req, res, next) => {
             
             if (update.success == true) {
                 res.status(200).send(
-                    parseResponse(true, data, '00', 'Update Fungsi Data Controller Success')
+                    parseResponse(true, data, '00', 'Update Sub Fungsi Data Controller Success')
                 )
             }
 
+        } else if (action == "delete"){
+            let { id } = req.body 
+            let where = [{key:'ID_SUBFUNGSI', value:id}]
+            let hapus =  await SubFungsiModel.delete(where);
+            if (hapus.success == true) {
+                res.status(200).send(
+                    parseResponse(true, where, '00', 'Delete Sub Fungsi Data Controller Success')
+                )
+            }
         } else {
             res.status(200).send(
                 parseResponse(true, null, '404', 'Request Not Found')

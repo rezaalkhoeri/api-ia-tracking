@@ -219,8 +219,8 @@ TLController.closeRekomendasiController = async(req, res, next) => {
         let {idRekomendasi} = req.body
 
         let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
-        let dataRek = await RekomendasiModel.getBy('*', whereR)
-        let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+        let dataRekomendasi = await RekomendasiModel.getBy('*', whereR)
+        let whereT = [{key:'ID_Temuan', value:dataRekomendasi.ID_TEMUAN}]
         let dataTemuan = await TemuanModel.getBy('*', whereT)
         let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
         let dataLHA = await LHAModel.getBy('*', whereL)
@@ -285,7 +285,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                                     {key:'ID_LHA', value:dataLHA.ID_LHA},
                                     {key:'UserId', value:auditorBy},
                                     {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
-                                    {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                                    {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRekomendasi.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
                                     {key:'Type', value:'Approval'}
                                 ]
                                 let log = await LogActivityModel.save(logData);
@@ -301,7 +301,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                                 {key:'ID_LHA', value:dataLHA.ID_LHA},
                                 {key:'UserId', value:auditorBy},
                                 {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
-                                {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                                {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRekomendasi.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
                                 {key:'Type', value:'Approval'}
                             ]
                             let log = await LogActivityModel.save(logData);
@@ -318,7 +318,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                         {key:'ID_LHA', value:dataLHA.ID_LHA},
                         {key:'UserId', value:auditorBy},
                         {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
-                        {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
+                        {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRekomendasi.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
                         {key:'Type', value:'Approval'}
                     ]
                     let log = await LogActivityModel.save(logData);
