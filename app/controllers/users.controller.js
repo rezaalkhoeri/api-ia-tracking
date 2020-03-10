@@ -291,7 +291,7 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                 }
             }
         } else if (action == 'update') {
-            let id = req.body.id
+            let { id, status } = req.body
             let where = [{key:'ID',value:id}]
             let data = [
                 {key : 'Name', value : name},
@@ -300,7 +300,7 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                 {key : 'Perusahaan', value : perusahaan},
                 {key : 'Email', value : email},
                 {key : 'Role', value : role},
-                {key : 'StatusUser', value : '1'},
+                {key : 'StatusUser', value : status},
             ]
 
             let update =  await UsersModel.save(data, where)
