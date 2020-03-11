@@ -7,7 +7,7 @@ const parseResponse = require('../helpers/parse-response')
 const log = 'Dashboard controller';
 
 DashboardController.getSummaryByIdLHAController = async(req, res, next) => {
-    console.log(`├── ${log} :: Post Dashboard Data Controller`);
+    console.log(`├── ${log} :: Dashboard Get By LHA Controller`);
 
     try {
         let { idLHA } = req.body
@@ -85,5 +85,53 @@ DashboardController.getSummaryByIdLHAController = async(req, res, next) => {
         })
     }
 }
+
+DashboardController.getAllLHAController = async(req, res, next) => {
+    console.log(`├── ${log} :: Dashboard Get All LHA Controller`);
+
+    try {
+        let sqlLHA = `SELECT * FROM tblt_lha WHERE tblt_lha.StatusLHA = 'A1' 
+        OR tblt_lha.StatusLHA = 'A2'
+        OR tblt_lha.StatusLHA = 'A3'`
+        let getLHA = await LHAModel.QueryCustom(sqlLHA)
+
+        let sqlTemuan = `SELECT * FROM tblt_temuan WHERE tblt_temuan.StatusTemuan = 'A1' 
+        OR tblt_temuan.StatusTemuan = 'A2'
+        OR tblt_temuan.StatusTemuan = 'A3'`
+        let getTemuan = await LHAModel.QueryCustom(sqlTemuan)
+
+        let sqlRek = `SELECT * FROM tblt_rekomendasi WHERE tblt_rekomendasi.StatusTL = 'A1' 
+        OR tblt_rekomendasi.StatusTL = 'A2'
+        OR tblt_rekomendasi.StatusTL = 'A3'`
+        let getRek = await LHAModel.QueryCustom(sqlRek)
+
+        let sqlRekOpen = `SELECT * FROM tblt_rekomendasi WHERE tblt_rekomendasi.StatusTL = 'A1'`
+        let getRekOpen = await LHAModel.QueryCustom(sqlRekOpen)
+
+        let sqlRekClose = `SELECT * FROM tblt_rekomendasi WHERE tblt_rekomendasi.StatusTL = 'A3'`
+        let getRekClose = await LHAModel.QueryCustom(sqlRekClose)
+
+        let dashboard = {
+            totalLHA: getLHA.rows.length,
+            totalTemuan: getTemuan.rows.length,
+            totalRek: getRek.rows.length,
+            rekOpen: getRekOpen.rows.length,
+            rekClose: getRekClose.rows.length
+        }
+
+        res.status(200).send(
+            parseResponse(true, dashboard, '00', 'Get All Data Controller Success')
+        )
+
+    } catch (error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
 
 module.exports = DashboardController
