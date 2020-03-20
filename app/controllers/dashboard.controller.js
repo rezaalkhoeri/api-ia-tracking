@@ -105,7 +105,8 @@ DashboardController.getAllLHAController = async(req, res, next) => {
         OR tblt_rekomendasi.StatusTL = 'A3'`
         let getRek = await LHAModel.QueryCustom(sqlRek)
 
-        let sqlRekOpen = `SELECT * FROM tblt_rekomendasi WHERE tblt_rekomendasi.StatusTL = 'A1'`
+        let sqlRekOpen = `SELECT * FROM tblt_rekomendasi WHERE tblt_rekomendasi.StatusTL = 'A1' 
+        OR tblt_rekomendasi.StatusTL = 'A2'`
         let getRekOpen = await LHAModel.QueryCustom(sqlRekOpen)
 
         let sqlRekClose = `SELECT * FROM tblt_rekomendasi WHERE tblt_rekomendasi.StatusTL = 'A3'`

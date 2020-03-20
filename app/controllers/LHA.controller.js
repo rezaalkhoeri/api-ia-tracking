@@ -391,8 +391,10 @@ LHAController.getRekomendasiController = async(req, res, next) => {
     console.log(`├── ${log} :: Get Rekomendasi Controller`);
 
     try{
+        let sql
 
-        let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, T.ID_TEMUAN, T.JudulTemuan, 
+        if (req.currentUser.body.role == '4') {
+            sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, T.ID_TEMUAN, T.JudulTemuan, 
                     R.ID_REKOMENDASI, R.JudulRekomendasi, LHA.TipeLHA, R.DueDate, R.StatusTL
                     FROM tblt_rekomendasi R
                     LEFT JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
@@ -400,6 +402,22 @@ LHAController.getRekomendasiController = async(req, res, next) => {
                     WHERE LHA.StatusLHA = 'A1' AND T.StatusTemuan = 'A1' AND R.StatusTL = 'A1' 
                     OR R.StatusTL = 'A4'
                     ORDER BY R.DueDate DESC`
+        } else {
+            let idFungsi = req.currentUser.body.idFungsi
+            sql = `SELECT DISTINCT R.*, T.*, LHA.*
+                    FROM tblm_fungsi F 
+                    LEFT JOIN tblm_sub_fungsi SF ON F.ID_FUNGSI = SF.ID_FUNGSI 
+                    LEFT JOIN tblt_rekomendasi_fungsi RF ON RF.ID_SUBFUNGSI = SF.ID_SUBFUNGSI
+                    LEFT JOIN tblt_rekomendasi R ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                    LEFT JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
+                    LEFT JOIN tblt_lha LHA ON LHA.ID_LHA = T.ID_LHA
+                    WHERE F.ID_FUNGSI = '`+ idFungsi + `' 
+                    AND R.StatusTL = 'A1'
+                    AND T.StatusTemuan = 'A1'
+                    AND LHA.StatusLHA = 'A1'
+                    OR R.StatusTL = 'A4'
+                    ORDER BY R.DueDate ASC`
+        }
 
         let dbRekomendasi = await TemuanModel.QueryCustom(sql);
         let obj = dbRekomendasi.rows

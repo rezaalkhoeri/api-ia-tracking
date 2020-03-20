@@ -1,4 +1,5 @@
 const UsersController                       = {}
+const nJwt = require('njwt')
 const rp                                    = require('request-promise')
 const randomstring                          = require("randomstring")
 const UsersModel                            = require('../models/users.model')
@@ -65,6 +66,7 @@ UsersController.login = async(req, res, next) => {
                         email: users_tbl.Email,
                         role: users_tbl.Role,
                         status: users_tbl.StatusUser,
+                        idFungsi: users_tbl.ID_FUNGSI,
                         validator: validatorsRandom
                     }
                     token = await generateToken(userObj)
@@ -77,6 +79,7 @@ UsersController.login = async(req, res, next) => {
                         email: users_tbl.Email,
                         role: users_tbl.Role,
                         status: users_tbl.StatusUser,
+                        idFungsi: users_tbl.ID_FUNGSI
                     }
                 } else {
                     //check user from manual lookup table on database
@@ -98,6 +101,7 @@ UsersController.login = async(req, res, next) => {
                                 email: users_tbl.Email,
                                 role: users_tbl.Role,
                                 status: users_tbl.StatusUser,    
+                                idFungsi: users_tbl.ID_FUNGSI,
                                 validator: validatorsRandom
                             }
                             token = await generateToken(userObj)
@@ -110,6 +114,7 @@ UsersController.login = async(req, res, next) => {
                                 email: users_tbl.Email,
                                 role: users_tbl.Role,
                                 status: users_tbl.StatusUser,    
+                                idFungsi: users_tbl.ID_FUNGSI
                             }
                         } else {
                             // login not authorize
@@ -185,11 +190,12 @@ UsersController.getUsersDataController = async(req, res, next) => {
     console.log(`├── ${log} :: Get Users Data Controller`);
 
     try{
-        let sql = await UsersModel.getAll('*', []);
+        let sql = `SELECT * FROM user JOIN tblm_fungsi ON tblm_fungsi.ID_FUNGSI = user.ID_FUNGSI`
+        let getUsers = await UsersModel.QueryCustom(sql);
 
         // success
         res.status(200).send(
-            parseResponse(true, sql, '00', 'Get Users Data Controller Success')
+            parseResponse(true, getUsers.rows, '00', 'Get Users Data Controller Success')
         )
     } catch(error) {
         console.log('Error exception :' + error)
@@ -229,86 +235,107 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
     console.log(`├── ${log} :: Create Update Users Data Controller`);
 
     try {        
-        let { action, password, name, nopek, jabatan, perusahaan, email, role } = req.body
+        let { action, user_id, password, name, nopek, jabatan, perusahaan, email, role, fungsi } = req.body
 
         if (action == 'create') {
-            let max = await UsersModel.QueryCustom('SELECT MAX(UserID) AS max_id FROM user');
+            let condition = [{key:'UserID', value:user_id}]
+            let cekUser = await UsersModel.getAll('*', condition)
 
-            if (max.count > 1) {
-                let value =  max.rows[0].max_id;
-                let number = value.substr(1,7)
-                let angka = parseInt(number)
-                let n = angka + 1
+            if (! cekUser.length > 0) {
+                let where = [{ key: 'Email', value: email }]
+                let cekEmail = await UsersModel.getAll('*', where)
 
-                let output = [], padded;
-                for (i=n; i<=n; i++) {
-                    padded = ('00000'+i).slice(-10);
-                    output.push(padded);
-                }  
+                if (!cekEmail.length > 0) {
+                    let pwdEncrypt = await encryptPassword(password);
 
-                let userId = 'U'+output
-                let pwdEncrypt = await encryptPassword(password);
+                    let data = [
+                        { key: 'UserID', value: user_id },
+                        { key: 'Password', value: pwdEncrypt },
+                        { key: 'Name', value: name },
+                        { key: 'Nopek', value: nopek },
+                        { key: 'Jabatan', value: jabatan },
+                        { key: 'Perusahaan', value: perusahaan },
+                        { key: 'Email', value: email },
+                        { key: 'Role', value: role },
+                        { key: 'ID_FUNGSI', value: fungsi },
+                        { key: 'StatusUser', value: '1' },
+                    ]
 
-                let data = [
-                    {key : 'UserID', value : userId},
-                    {key : 'Password', value : pwdEncrypt},
-                    {key : 'Name', value : name},
-                    {key : 'Nopek', value : nopek},
-                    {key : 'Jabatan', value : jabatan},
-                    {key : 'Perusahaan', value : perusahaan},
-                    {key : 'Email', value : email},
-                    {key : 'Role', value : role},
-                    {key : 'StatusUser', value : '1'},
-                ]
+                    let insert = await UsersModel.save(data);
+                    if (insert.success == true) {
+                        res.status(200).send(
+                            parseResponse(true, data, '00', 'Insert Users Data Controller Success')
+                        )
+                    }        
+                } else {
+                    statusCode = 200
+                    responseCode = '44'
+                    message = 'Email Already Exist'
+                    acknowledge = false
+                    result = null
 
-                let insert =  await UsersModel.save(data);
-                if (insert.success == true) {
-                    res.status(200).send(
-                        parseResponse(true, data, '00', 'Insert Users Data Controller Success')
+                    res.status(statusCode).send(
+                        parseResponse(acknowledge, result, responseCode, message)
                     )
-                }        
+                }                
             } else {
-                let userId = 'U000001'
-                let pwdEncrypt = await encryptPassword(password);
+                statusCode = 200
+                responseCode = '44'
+                message = 'User Already Exist'
+                acknowledge = false
+                result = null
 
-                let data = [
-                    {key : 'UserID', value : userId},
-                    {key : 'Password', value : pwdEncrypt},
-                    {key : 'Name', value : name},
-                    {key : 'Nopek', value : nopek},
-                    {key : 'Jabatan', value : jabatan},
-                    {key : 'Perusahaan', value : perusahaan},
-                    {key : 'Email', value : email},
-                    {key : 'Role', value : role},
-                    {key : 'StatusUser', value : '1'},
-                ]
-
-                let insert =  await UsersModel.save(data);
-                if (insert.success == true) {
-                    res.status(200).send(
-                        parseResponse(true, data, '00', 'Insert Users Data Controller Success')
-                    )
-                }
-            }
-        } else if (action == 'update') {
-            let { id, status } = req.body
-            let where = [{key:'ID',value:id}]
-            let data = [
-                {key : 'Name', value : name},
-                {key : 'Nopek', value : nopek},
-                {key : 'Jabatan', value : jabatan},
-                {key : 'Perusahaan', value : perusahaan},
-                {key : 'Email', value : email},
-                {key : 'Role', value : role},
-                {key : 'StatusUser', value : status},
-            ]
-
-            let update =  await UsersModel.save(data, where)
-            if (update.success == true) {
-                res.status(200).send(
-                    parseResponse(true, data, '00', 'Update Users Data Controller Success')
+                // return response
+                res.status(statusCode).send(
+                    parseResponse(acknowledge, result, responseCode, message)
                 )
             }
+        } else if (action == 'update') {
+            let where = [{ key: 'Email', value: email }]
+            let cekEmail = await UsersModel.getAll('*', where)
+
+            if (!cekEmail.length > 0) {
+                let { id, status } = req.body
+                let where = [{ key: 'ID', value: id }]
+                let data = [
+                    { key: 'Name', value: name },
+                    { key: 'Nopek', value: nopek },
+                    { key: 'Jabatan', value: jabatan },
+                    { key: 'Perusahaan', value: perusahaan },
+                    { key: 'Email', value: email },
+                    { key: 'Role', value: role },
+                    { key: 'ID_FUNGSI', value: fungsi },
+                    { key: 'StatusUser', value: status },
+                ]
+
+                let update = await UsersModel.save(data, where)
+                if (update.success == true) {
+                    res.status(200).send(
+                        parseResponse(true, data, '00', 'Update Users Data Controller Success')
+                    )
+                }
+            } else {
+                statusCode = 200
+                responseCode = '44'
+                message = 'Email Already Exist'
+                acknowledge = false
+                result = null
+
+                res.status(statusCode).send(
+                    parseResponse(acknowledge, result, responseCode, message)
+                )
+            }
+        } else if (action == 'delete'){
+            let { id } = req.body
+            let condition = [{key:'ID', value:id}]
+            let hapus = await UsersModel.delete(condition)
+
+            if (hapus.success == true) {
+                res.status(200).send(
+                    parseResponse(true, null, '00', 'Delete Users Data Controller Success')
+                )
+            }
+            
         } else {
             statusCode      = 200
             responseCode    = '404'
@@ -323,6 +350,56 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
         }
 
     } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+UsersController.logoutUsersDataController = async (req, res, next) => {
+    console.log(`├── ${log} :: User Logout`);
+    try {
+        let { key } = req.body
+
+        let statusCode = 200
+        let responseCode = 00
+        let message = 'Logout Success'
+        let acknowledge = true
+        let result = null
+
+        let username = ""
+
+        if (key) {
+            await nJwt.verify(key, CONFIG.TOKEN_SECRET, function (err, verifiedToken) {
+                if (err) {
+                    res.status(200).send(
+                        parseResponse(false, [], '90', `Error Verify JWT : ${err}`)
+                    )
+                } else {
+                    const jsonToken = JSON.stringify(verifiedToken)
+                    req.currentUser = JSON.parse(jsonToken)
+                    email = req.currentUser.body.email
+                }
+            })
+
+            let userData = [{ key: 'VALIDATOR', value: "RESET" }]
+            let condition = [{ key: 'EMAIL', value: email }]
+
+            await UsersModel.save(userData, condition)
+
+            res.status(statusCode).send(
+                parseResponse(acknowledge, result, responseCode, message)
+            )
+        } else {
+            res.status(200).send(
+                parseResponse(false, [], '99', 'There is Authentication Token not given')
+            )
+        }
+
+    } catch (error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)
         next({

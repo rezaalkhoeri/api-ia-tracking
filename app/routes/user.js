@@ -9,5 +9,6 @@ router
     .get('/', UserController.getUsersDataController)
     .get('/:ID', UserController.getUsersDataByIDController)
     .post('/crud', UserController.createUpdateUsersDataController)
+    .post('/logout', UserController.logoutUsersDataController)
 
 module.exports = router
