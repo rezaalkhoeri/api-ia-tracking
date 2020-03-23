@@ -8,6 +8,7 @@ router
     .all('/*', authentication)
     .post('/summaryByLHA', DashboardController.getSummaryByIdLHAController)
     .post('/getAll', DashboardController.getAllLHAController)
+    .post('/getByUserFungsi', DashboardController.getByUserFungsiController)
     .post('/recentActivity', LogActivityController.recentActivityLHAController)
 
 module.exports = router

@@ -134,5 +134,94 @@ DashboardController.getAllLHAController = async(req, res, next) => {
     }
 }
 
+DashboardController.getByUserFungsiController = async (req, res, next) => {
+    console.log(`├── ${log} :: Dashboard Get By User Fungsi LHA Controller`);
+
+    try {
+        let fungsi = req.currentUser.body.idFungsi
+
+        let sqlLHA = `SELECT DISTINCT LHA.ID_LHA FROM tblt_rekomendasi R
+                        JOIN tblt_rekomendasi_fungsi RF ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                        JOIN tblm_sub_fungsi SF ON SF.ID_SUBFUNGSI = RF.ID_SUBFUNGSI
+                        JOIN tblm_fungsi F ON F.ID_FUNGSI = SF.ID_FUNGSI
+                        JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
+                        JOIN tblt_lha LHA ON LHA.ID_LHA = T.ID_LHA
+                        WHERE F.ID_FUNGSI = `+fungsi+` 
+                        AND R.StatusTL = 'A1' 
+                        OR R.StatusTL = 'A2'
+                        OR R.StatusTL = 'A3'
+                        OR R.StatusTL = 'A4'`
+        let getLHA = await LHAModel.QueryCustom(sqlLHA)
+
+        let sqlTemuan = `SELECT DISTINCT T.ID_TEMUAN, T.JudulTemuan FROM tblt_rekomendasi R
+                        JOIN tblt_rekomendasi_fungsi RF ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                        JOIN tblm_sub_fungsi SF ON SF.ID_SUBFUNGSI = RF.ID_SUBFUNGSI
+                        JOIN tblm_fungsi F ON F.ID_FUNGSI = SF.ID_FUNGSI
+                        JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
+                        WHERE F.ID_FUNGSI = `+ fungsi +` 
+                        AND R.StatusTL = 'A1' 
+                        OR R.StatusTL = 'A2'
+                        OR R.StatusTL = 'A3'
+                        OR R.StatusTL = 'A4'`
+        let getTemuan = await LHAModel.QueryCustom(sqlTemuan)
+
+        let sqlRek = `SELECT DISTINCT R.ID_REKOMENDASI, R.JudulRekomendasi FROM tblt_rekomendasi R
+                        JOIN tblt_rekomendasi_fungsi RF ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                        JOIN tblm_sub_fungsi SF ON SF.ID_SUBFUNGSI = RF.ID_SUBFUNGSI
+                        JOIN tblm_fungsi F ON F.ID_FUNGSI = SF.ID_FUNGSI
+                        WHERE F.ID_FUNGSI = `+ fungsi +` 
+                        AND R.StatusTL = 'A1' 
+                        OR R.StatusTL = 'A2'
+                        OR R.StatusTL = 'A3'
+                        OR R.StatusTL = 'A4'`
+        let getRek = await LHAModel.QueryCustom(sqlRek)
+
+        let sqlRekOpen = `SELECT DISTINCT R.ID_REKOMENDASI, R.JudulRekomendasi FROM tblt_rekomendasi R
+                        JOIN tblt_rekomendasi_fungsi RF ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                        JOIN tblm_sub_fungsi SF ON SF.ID_SUBFUNGSI = RF.ID_SUBFUNGSI
+                        JOIN tblm_fungsi F ON F.ID_FUNGSI = SF.ID_FUNGSI
+                        WHERE F.ID_FUNGSI = `+ fungsi + ` 
+                        AND R.StatusTL = 'A1' 
+                        OR R.StatusTL = 'A2'`
+        let getRekOpen = await LHAModel.QueryCustom(sqlRekOpen)
+
+        let sqlRekClose = `SELECT DISTINCT R.ID_REKOMENDASI, R.JudulRekomendasi FROM tblt_rekomendasi R
+                        JOIN tblt_rekomendasi_fungsi RF ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                        JOIN tblm_sub_fungsi SF ON SF.ID_SUBFUNGSI = RF.ID_SUBFUNGSI
+                        JOIN tblm_fungsi F ON F.ID_FUNGSI = SF.ID_FUNGSI
+                        WHERE F.ID_FUNGSI = `+ fungsi + ` 
+                        AND R.StatusTL = 'A3'`
+        let getRekClose = await LHAModel.QueryCustom(sqlRekClose)
+
+        let sqlRekReject = `SELECT DISTINCT R.ID_REKOMENDASI, R.JudulRekomendasi FROM tblt_rekomendasi R
+                        JOIN tblt_rekomendasi_fungsi RF ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                        JOIN tblm_sub_fungsi SF ON SF.ID_SUBFUNGSI = RF.ID_SUBFUNGSI
+                        JOIN tblm_fungsi F ON F.ID_FUNGSI = SF.ID_FUNGSI
+                        WHERE F.ID_FUNGSI = `+ fungsi + ` 
+                        AND R.StatusTL = 'A4'`
+        let getRekReject = await LHAModel.QueryCustom(sqlRekReject)
+
+        let dashboard = {
+            totalLHA: getLHA.rows.length,
+            totalTemuan: getTemuan.rows.length,
+            totalRek: getRek.rows.length,
+            rekOpen: getRekOpen.rows.length,
+            rekClose: getRekClose.rows.length,
+            rekReject: getRekReject.rows.length
+        }
+
+        res.status(200).send(
+            parseResponse(true, dashboard, '00', 'Get All Data Controller Success')
+        )
+
+    } catch (error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
 
 module.exports = DashboardController

@@ -291,11 +291,13 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                 )
             }
         } else if (action == 'update') {
-            let where = [{ key: 'Email', value: email }]
-            let cekEmail = await UsersModel.getAll('*', where)
+            let { id, status } = req.body
+            let condition = [{key:'ID', value:id}]
+            let oldEmail = await UsersModel.getAll('Email', condition)
 
-            if (!cekEmail.length > 0) {
-                let { id, status } = req.body
+            console.log(oldEmail[0].Email);
+            
+            if (email == oldEmail[0].Email) {
                 let where = [{ key: 'ID', value: id }]
                 let data = [
                     { key: 'Name', value: name },
@@ -315,15 +317,39 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                     )
                 }
             } else {
-                statusCode = 200
-                responseCode = '44'
-                message = 'Email Already Exist'
-                acknowledge = false
-                result = null
+                let where = [{ key: 'Email', value: email }]
+                let cekEmail = await UsersModel.getAll('*', where)
 
-                res.status(statusCode).send(
-                    parseResponse(acknowledge, result, responseCode, message)
-                )
+                if (!cekEmail.length > 0) {
+                    let where = [{ key: 'ID', value: id }]
+                    let data = [
+                        { key: 'Name', value: name },
+                        { key: 'Nopek', value: nopek },
+                        { key: 'Jabatan', value: jabatan },
+                        { key: 'Perusahaan', value: perusahaan },
+                        { key: 'Email', value: email },
+                        { key: 'Role', value: role },
+                        { key: 'ID_FUNGSI', value: fungsi },
+                        { key: 'StatusUser', value: status },
+                    ]
+
+                    let update = await UsersModel.save(data, where)
+                    if (update.success == true) {
+                        res.status(200).send(
+                            parseResponse(true, data, '00', 'Update Users Data Controller Success')
+                        )
+                    }
+                } else {
+                    statusCode = 200
+                    responseCode = '44'
+                    message = 'Email Already Exist'
+                    acknowledge = false
+                    result = null
+
+                    res.status(statusCode).send(
+                        parseResponse(acknowledge, result, responseCode, message)
+                    )
+                }
             }
         } else if (action == 'delete'){
             let { id } = req.body
@@ -365,12 +391,10 @@ UsersController.logoutUsersDataController = async (req, res, next) => {
         let { key } = req.body
 
         let statusCode = 200
-        let responseCode = 00
+        let responseCode = '00'
         let message = 'Logout Success'
         let acknowledge = true
         let result = null
-
-        let username = ""
 
         if (key) {
             await nJwt.verify(key, CONFIG.TOKEN_SECRET, function (err, verifiedToken) {
@@ -382,17 +406,17 @@ UsersController.logoutUsersDataController = async (req, res, next) => {
                     const jsonToken = JSON.stringify(verifiedToken)
                     req.currentUser = JSON.parse(jsonToken)
                     email = req.currentUser.body.email
+
+                    let userData = [{ key: 'VALIDATOR', value: "RESET" }]
+                    let condition = [{ key: 'EMAIL', value: email }]
+
+                    UsersModel.save(userData, condition)
+
+                    res.status(statusCode).send(
+                        parseResponse(acknowledge, result, responseCode, message)
+                    )
                 }
-            })
-
-            let userData = [{ key: 'VALIDATOR', value: "RESET" }]
-            let condition = [{ key: 'EMAIL', value: email }]
-
-            await UsersModel.save(userData, condition)
-
-            res.status(statusCode).send(
-                parseResponse(acknowledge, result, responseCode, message)
-            )
+            })            
         } else {
             res.status(200).send(
                 parseResponse(false, [], '99', 'There is Authentication Token not given')
