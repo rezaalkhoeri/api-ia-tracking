@@ -47,6 +47,38 @@ LHAController.getLHAController = async(req, res, next) => {
             res.status(200).send(
                 parseResponse(true, result, '00', 'Get LHA Controller Success')
             )
+        } else if (status == 'report'){
+            let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, LHA.TanggalLHA, LHA.TipeLHA, LHA.StatusLHA, coalesce(X.totTemuan, 0) AS TotalTemuan, coalesce(Y.totRekomendasi, 0) AS TotalRekomendasi
+                        FROM tblt_lha LHA 
+                        LEFT JOIN ( SELECT COUNT(T.ID_LHA) as totTemuan, T.ID_LHA 
+                        FROM tblt_lha L 
+                        LEFT JOIN tblt_temuan T on L.ID_LHA = T.ID_LHA group by T.ID_LHA ) as X ON LHA.ID_LHA = X.ID_LHA 
+                        LEFT JOIN ( SELECT count(temuan.id_lha) as totRekomendasi , temuan.id_lha
+                        FROM tblt_temuan temuan 
+                        RIGHT JOIN tblt_rekomendasi rek on temuan.ID_TEMUAN = rek.ID_TEMUAN group BY temuan.id_lha ) as Y ON Y.id_lha = X.ID_LHA
+                        WHERE LHA.StatusLHA = 'A1' OR LHA.StatusLHA = 'A3'
+                        ORDER BY LHA.CreatedDate DESC;`
+
+            let reportSelect = await LHAModel.QueryCustom(sql);
+
+            let obj = reportSelect.rows
+            result = _.map(obj, function (data) {
+                return dataLHA = {
+                    ID_LHA: data.ID_LHA,
+                    NomorLHA: data.NomorLHA,
+                    JudulLHA: data.JudulLHA,
+                    TanggalLHA: moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA: data.TipeLHA,
+                    StatusLHA: data.StatusLHA,
+                    TotalTemuan: data.TotalTemuan,
+                    TotalRekomendasi: data.TotalRekomendasi
+                }
+            });
+
+            // success
+            res.status(200).send(
+                parseResponse(true, result, '00', 'Get Report Controller Success')
+            )
         } else {
             let dbLHA = await LHAModel.QueryCustom(`CALL SP_VIEW_LHA_WHERE('`+status+`')`);
             let obj = dbLHA.rows[0]
@@ -79,6 +111,7 @@ LHAController.getLHAController = async(req, res, next) => {
     }
 }
 
+// For Datatable
 LHAController.getLHAdataController = async(req, res, next) => {
     console.log(`├── ${log} :: Get LHA Controller`);
 
@@ -459,7 +492,7 @@ LHAController.searchLHAController = async(req, res, next) => {
         let { page } = req.body
 
         if ( page == 'auditor') {
-            let { tipe, dueDate, status } = req.body
+            let { tipe, fromDate, toDate, status } = req.body
             let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, LHA.TanggalLHA, LHA.TipeLHA, LHA.StatusLHA, coalesce(X.totTemuan, 0) AS TotalTemuan, coalesce(Y.totRekomendasi, 0) AS TotalRekomendasi
                         FROM tblt_lha LHA 
                         LEFT JOIN ( SELECT COUNT(T.ID_LHA) as totTemuan, T.ID_LHA 
@@ -468,13 +501,27 @@ LHAController.searchLHAController = async(req, res, next) => {
                         LEFT JOIN ( SELECT count(temuan.id_lha) as totRekomendasi , temuan.id_lha
                         FROM tblt_temuan temuan 
                         RIGHT JOIN tblt_rekomendasi rek on temuan.ID_TEMUAN = rek.ID_TEMUAN group BY temuan.id_lha ) as Y ON Y.id_lha = X.ID_LHA
-                        WHERE LHA.TipeLHA = '`+ tipe +`' AND CURDATE() `+ dueDate +` LHA.TanggalLHA AND LHA.StatusLHA = '`+ status +`'`
+                        WHERE LHA.TipeLHA = '`+ tipe +`' AND LHA.StatusLHA = '`+ status +`' AND LHA.TanggalLHA BETWEEN '`+ fromDate +`' AND '`+ toDate +`'`
     
             let dbSearch = await LHAModel.QueryCustom(sql);
-    
+
+            let obj = dbSearch.rows
+            result = _.map(obj, function (data) {
+                return dataLHA = {
+                    ID_LHA: data.ID_LHA,
+                    NomorLHA: data.NomorLHA,
+                    JudulLHA: data.JudulLHA,
+                    TanggalLHA: moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA: data.TipeLHA,
+                    StatusLHA: data.StatusLHA,
+                    TotalTemuan: data.TotalTemuan,
+                    TotalRekomendasi: data.TotalRekomendasi
+                }
+            });
+            
             // success
             res.status(200).send(
-                parseResponse(true, dbSearch, '00', 'Get Rekomendasi Controller Success')
+                parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
             )            
         } else if( page == 'auditee') {
             let { tipe, dueDate } = req.body
@@ -484,14 +531,64 @@ LHAController.searchLHAController = async(req, res, next) => {
                         INNER JOIN tblt_lha LHA ON LHA.ID_LHA = T.ID_LHA
                         WHERE LHA.StatusLHA = 'A1' AND T.StatusTemuan = 'A1' AND R.StatusTL = 'A1' 
                         AND LHA.TipeLHA = '`+ tipe +`' AND CURDATE()`+ dueDate +`R.DueDate
-                        ORDER BY LHA.NomorLHA ASC`            
+                        ORDER BY LHA.NomorLHA ASC`
     
             let dbSearch = await LHAModel.QueryCustom(sql);
-    
+
+            let obj = dbSearch.rows
+            result = _.map(obj, function (data) {
+                return dataLHA = {
+                    ID_LHA: data.ID_LHA,
+                    NomorLHA: data.NomorLHA,
+                    JudulLHA: data.JudulLHA,
+                    ID_TEMUAN: data.ID_TEMUAN,
+                    JudulTemuan: data.JudulTemuan,
+                    ID_REKOMENDASI: data.ID_REKOMENDASI,
+                    JudulRekomendasi: data.JudulRekomendasi,
+                    TipeLHA: data.TipeLHA,
+                    DueDate: moment(data.DueDate).format('YYYY-MM-DD'),
+                    StatusTL: data.StatusTL
+                }
+            });
+            
             // success
             res.status(200).send(
-                parseResponse(true, dbSearch, '00', 'Get Rekomendasi Controller Success')
+                parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
             )                        
+        } else if (page == 'report') {
+            let {fromDate, toDate} = req.body
+            let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, LHA.TanggalLHA, LHA.TipeLHA, LHA.StatusLHA, coalesce(X.totTemuan, 0) AS TotalTemuan, coalesce(Y.totRekomendasi, 0) AS TotalRekomendasi
+                        FROM tblt_lha LHA 
+                        LEFT JOIN ( SELECT COUNT(T.ID_LHA) as totTemuan, T.ID_LHA 
+                        FROM tblt_lha L 
+                        LEFT JOIN tblt_temuan T on L.ID_LHA = T.ID_LHA group by T.ID_LHA ) as X ON LHA.ID_LHA = X.ID_LHA 
+                        LEFT JOIN ( SELECT count(temuan.id_lha) as totRekomendasi , temuan.id_lha
+                        FROM tblt_temuan temuan 
+                        RIGHT JOIN tblt_rekomendasi rek on temuan.ID_TEMUAN = rek.ID_TEMUAN group BY temuan.id_lha ) as Y ON Y.id_lha = X.ID_LHA
+                        WHERE LHA.TanggalLHA BETWEEN '`+ fromDate +`' AND '`+ toDate +`'
+                        AND LHA.StatusLHA = 'A1' OR LHA.StatusLHA = 'A3'
+                        ORDER BY LHA.CreatedDate DESC;`
+
+            let reportSelect = await LHAModel.QueryCustom(sql);
+
+            let obj = reportSelect.rows
+            result = _.map(obj, function (data) {
+                return dataLHA = {
+                    ID_LHA: data.ID_LHA,
+                    NomorLHA: data.NomorLHA,
+                    JudulLHA: data.JudulLHA,
+                    TanggalLHA: moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                    TipeLHA: data.TipeLHA,
+                    StatusLHA: data.StatusLHA,
+                    TotalTemuan: data.TotalTemuan,
+                    TotalRekomendasi: data.TotalRekomendasi
+                }
+            });
+
+            // success
+            res.status(200).send(
+                parseResponse(true, result, '00', 'Get Report Controller Success')
+            )            
         } else {
             res.status(200).send(
                 parseResponse(true, null, '404', 'Request Not Found')
