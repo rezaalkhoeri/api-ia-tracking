@@ -18,137 +18,227 @@ UsersController.login = async(req, res, next) => {
         } = req.body
 
         let statusCode      = 200
-        let responseCode    = 00
+        let responseCode    = '00'
         let message         = 'Login Success'
         let acknowledge     = true
         let result          = null
 
         let pwdEncrypt      = await encryptPassword(password)
 
-
         // check table ms_it_personal_data
         // if ZTIPE eq L (LDAP) then check userexistLDAP ? generate token
         // else not user LDAP then cek database table ms_it_personal_data and check password encrypt
+        const emailParam = email.split('@')
 
-        let where       = [{ key: 'Email', value: email }]
-        let users_tbl   = await UsersModel.getBy('*', where)
+        if ((emailParam.length > 1) && (emailParam[1] == "pertamina.com")) {
+            let where = [{ key: 'Email', value: email }]
+            let users_tbl = await UsersModel.getBy('*', where)
 
-        let token       = ''
+            let token = ''
 
-        if (users_tbl.Email !== undefined) {
-            //check user via LDAP
-            const emailParam    = users_tbl.Email.split('@')
-            const options       = {
-                method: 'POST',
-                url: partnersApi.ldapService.login,
-                body: {
-                    username: emailParam[0],
-                    password: password,
-                    method: 'login'
-                },
-                json: true,
-            }
+            if (users_tbl.Email !== undefined) {
+                //check user via LDAP
+                const emailParam = users_tbl.Email.split('@')
+                const options = {
+                    method: 'POST',
+                    url: partnersApi.ldapService.login,
+                    body: {
+                        username: emailParam[0],
+                        password: password,
+                        method: 'login'
+                    },
+                    json: true,
+                }
 
-            const ldap = await rp(options)
+                const ldap = await rp(options)
 
-            if (ldap != null) {
-                let validatorsRandom = randomstring.generate()
-                let userData         = [{ key: 'Validator', value : validatorsRandom }]
-                let condition        = [{ key: 'Email', value: users_tbl.Email }]
+                if (ldap != null) {
+                    let validatorsRandom = randomstring.generate()
+                    let userData = [{ key: 'Validator', value: validatorsRandom }]
+                    let condition = [{ key: 'Email', value: users_tbl.Email }]
 
-                if (ldap.Status == '00') {
-                    //save validator random
-                    await UsersModel.save(userData, condition)
-                    let userObj = {
-                        userid: users_tbl.UserID,
-                        name: users_tbl.Name,
-                        nopek: users_tbl.Nopek,
-                        email: users_tbl.Email,
-                        role: users_tbl.Role,
-                        status: users_tbl.StatusUser,
-                        idFungsi: users_tbl.ID_FUNGSI,
-                        validator: validatorsRandom
-                    }
-                    token = await generateToken(userObj)
+                    if (ldap.Status == '00') {
+                        //save validator random
+                        await UsersModel.save(userData, condition)
+                        let userObj = {
+                            userid: users_tbl.UserID,
+                            name: users_tbl.Name,
+                            nopek: users_tbl.Nopek,
+                            jabatan: users_tbl.Jabatan,
+                            perusahaan: users_tbl.Perusahaan,
+                            email: users_tbl.Email,
+                            idFungsi: users_tbl.ID_FUNGSI,
+                            role: users_tbl.Role,
+                            validator: validatorsRandom
+                        }
+                        token = await generateToken(userObj)
 
-                    result = {
-                        token: token,
-                        userid: users_tbl.UserID,
-                        name: users_tbl.Name,
-                        nopek: users_tbl.Nopek,
-                        email: users_tbl.Email,
-                        role: users_tbl.Role,
-                        status: users_tbl.StatusUser,
-                        idFungsi: users_tbl.ID_FUNGSI
-                    }
-                } else {
-                    //check user from manual lookup table on database
-                    let options     = [
-                                        { key: 'Email', value: email },
-                                        { key: 'Password', value: pwdEncrypt }
-                                    ]
-                    let userCheck   = await UsersModel.getBy('*', options)
+                        result = {
+                            token: token,
+                            userid: users_tbl.UserID,
+                            name: users_tbl.Name,
+                            nopek: users_tbl.Nopek,
+                            jabatan: users_tbl.Jabatan,
+                            perusahaan: users_tbl.Perusahaan,
+                            email: users_tbl.Email,
+                            idFungsi: users_tbl.ID_FUNGSI,
+                            role: users_tbl.Role,
+                        }
+                    } else {
+                        //check user from manual lookup table on database
+                        let options = [
+                            { key: 'Email', value: email },
+                            { key: 'Password', value: pwdEncrypt }
+                        ]
+                        let userCheck = await UsersModel.getBy('*', options)
 
-                    if (userCheck.Email !== undefined) {
-                        if (userCheck.StatusUser !== '0') {
-                            //save validator random
-                            await UsersModel.save(userData, condition)
-                            // login success
-                            let userObj = {
-                                userid: users_tbl.UserID,
-                                name: users_tbl.Name,
-                                nopek: users_tbl.Nopek,
-                                email: users_tbl.Email,
-                                role: users_tbl.Role,
-                                status: users_tbl.StatusUser,    
-                                idFungsi: users_tbl.ID_FUNGSI,
-                                validator: validatorsRandom
-                            }
-                            token = await generateToken(userObj)
+                        if (userCheck.Email !== undefined) {
+                            if (userCheck.StatusUser !== 0) {
+                                //save validator random
+                                await UsersModel.save(userData, condition)
+                                // login success
+                                let userObj = {
+                                    userid: users_tbl.UserID,
+                                    name: users_tbl.Name,
+                                    nopek: users_tbl.Nopek,
+                                    jabatan: users_tbl.Jabatan,
+                                    perusahaan: users_tbl.Perusahaan,
+                                    email: users_tbl.Email,
+                                    idFungsi: users_tbl.ID_FUNGSI,
+                                    role: users_tbl.Role,
+                                    validator: validatorsRandom
+                                }
 
-                            result = {
-                                token: token,
-                                userid: users_tbl.UserID,
-                                name: users_tbl.Name,
-                                nopek: users_tbl.Nopek,
-                                email: users_tbl.Email,
-                                role: users_tbl.Role,
-                                status: users_tbl.StatusUser,    
-                                idFungsi: users_tbl.ID_FUNGSI
+                                token = await generateToken(userObj)
+
+                                result = {
+                                    token: token,
+                                    userid: users_tbl.UserID,
+                                    name: users_tbl.Name,
+                                    nopek: users_tbl.Nopek,
+                                    jabatan: users_tbl.Jabatan,
+                                    perusahaan: users_tbl.Perusahaan,
+                                    email: users_tbl.Email,
+                                    idFungsi: users_tbl.ID_FUNGSI,
+                                    role: users_tbl.Role,
+                                }
+                            } else {
+                                // login not authorize
+                                statusCode = 200
+                                responseCode = '05'
+                                message = 'Login Not Authorized, Account Is Nonactive'
+                                acknowledge = false
+                                result = null
                             }
                         } else {
                             // login not authorize
-                            statusCode      = 200
-                            responseCode    = '45'
-                            message         = 'Login Not Authorized, Account Is Nonactive'
-                            acknowledge     = false
-                            result          = null                            
+                            statusCode = 200
+                            responseCode = '05'
+                            message = 'Login Not Authorized, Password Incorrect'
+                            acknowledge = false
+                            result = null
+                        }
+                    }
+                } else {
+                    // return LDAP Service null
+                    statusCode = 200
+                    responseCode = '99'
+                    message = 'Error return response LDAP Service'
+                    acknowledge = false
+                    result = null
+                }
+            } else if (users_tbl.Email == undefined) {
+                //user tidak terdaftar di email dan LDAP jadi perlu di create ke DB berdasarkan hasil LDAP
+                const emailParam = email.split('@')
+                const options = {
+                    method: 'POST',
+                    url: partnersApi.ldapService.login,
+                    body: {
+                        username: emailParam[0],
+                        password: password,
+                        method: 'validate'
+                    },
+                    json: true,
+                }
+
+                const ldap = await rp(options)
+
+                if (ldap != null) {
+                    //start proses register pekerja
+                    if (ldap.Status == '00') {
+                        let validatorsRandom = randomstring.generate()
+                        let roleDefault = "5" //Rakyat Jelata
+                        let typeLDAP = "LDAP"
+
+                        let username = ldap.Data.Email.split('@')
+
+                        let data = [
+                            { key: 'UserID', value: username[0] },
+                            { key: 'Name', value: ldap.Data.NamaLengkap },
+                            { key: 'Nopek', value: ldap.Data.EmpNumber },
+                            { key: 'Perusahaan', value: 'PDSI' },
+                            { key: 'Email', value: ldap.Data.Email },
+                            { key: 'Role', value: roleDefault },
+                            { key: 'StatusUser', value: '1' },
+                            { key: 'Source', value: typeLDAP },
+                            { key: 'Validator', value: validatorsRandom }
+                        ]
+
+                        //save validator random
+                        await UsersModel.save(data)
+                        let userObj = {
+                            pernr: ldap.Data.EmpNumber,
+                            name: ldap.Data.NamaLengkap,
+                            username: ldap.Data.Email,
+                            email: ldap.Data.Email,
+                            tipe: typeLDAP,
+                            role: roleDefault,
+                            validator: validatorsRandom
+                        }
+                        token = await generateToken(userObj)
+
+                        result = {
+                            token: token,
+                            pernr: ldap.Data.EmpNumber,
+                            name: ldap.Data.NamaLengkap,
+                            username: ldap.Data.Email,
+                            email: ldap.Data.Email,
+                            tipe: typeLDAP,
+                            role: roleDefault,
                         }
                     } else {
-                        // login not authorize
-                        statusCode      = 200
-                        responseCode    = '05'
-                        message         = 'Login Not Authorized, Password Incorrect'
-                        acknowledge     = false
-                        result          = null
+                        statusCode = 200
+                        responseCode = '05'
+                        message = 'Login Not Authorized, User not exist'
+                        acknowledge = false
+                        result = null
                     }
+                    
+                } else {
+                    statusCode = 200
+                    responseCode = '05'
+                    message = 'Login Not Authorized, User not exist'
+                    acknowledge = false
+                    result = null                    
                 }
             } else {
-                // return LDAP Service null
-                statusCode      = 200
-                responseCode    = '99'
-                message         = 'Error return response LDAP Service'
-                acknowledge     = false
-                result          = null
+                // login not authorize
+                statusCode = 200
+                responseCode = '05'
+                message = 'Login Not Authorized, User not exist'
+                acknowledge = false
+                result = null
             }
+
+
         } else {
-            // login not authorize
-            statusCode      = 200
-            responseCode    = '05'
-            message         = 'Login Not Authorized, User not exist'
-            acknowledge     = false
-            result          = null
+            statusCode = 200
+            responseCode = "05"
+            message = "Email kurang lengkap. Harus dengan @pertamina.com"
+            acknowledge = false
+            result = null
         }
+
 
         // return response
         res.status(statusCode).send(
@@ -156,17 +246,13 @@ UsersController.login = async(req, res, next) => {
         )
     } catch (error) {
         console.log('Error exception :' + error)
-
-        res.status(200).send(
-            parseResponse(false, null, '500', error)
-        )
-
-        // let resp = parseResponse(false, null, '500', error)
-        // next({
-        //     resp,
-        //     status: 200
-        // })
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
     }
+
 }
 
 UsersController.getUserDetail = async (req, res, next) => {
