@@ -167,19 +167,26 @@ UsersController.login = async(req, res, next) => {
                     //start proses register pekerja
                     if (ldap.Status == '00') {
                         let validatorsRandom = randomstring.generate()
-                        let roleDefault = "5" //Rakyat Jelata
                         let typeLDAP = "LDAP"
-
                         let username = ldap.Data.Email.split('@')
+
+                        let roleDefault 
+                        if (ldap.Data.DivID == '10060672') {
+                            roleDefault = '1'                            
+                        } else {
+                            roleDefault = '2'
+                        }
 
                         let data = [
                             { key: 'UserID', value: username[0] },
                             { key: 'Name', value: ldap.Data.NamaLengkap },
                             { key: 'Nopek', value: ldap.Data.EmpNumber },
+                            { key: 'Jabatan', value: ldap.Data.PosText },
                             { key: 'Perusahaan', value: 'PDSI' },
                             { key: 'Email', value: ldap.Data.Email },
                             { key: 'Role', value: roleDefault },
                             { key: 'StatusUser', value: '1' },
+                            { key: 'ID_FUNGSI', value: ldap.Data.DivID },
                             { key: 'Source', value: typeLDAP },
                             { key: 'Validator', value: validatorsRandom }
                         ]
@@ -187,10 +194,12 @@ UsersController.login = async(req, res, next) => {
                         //save validator random
                         await UsersModel.save(data)
                         let userObj = {
-                            pernr: ldap.Data.EmpNumber,
+                            nopek: ldap.Data.EmpNumber,
                             name: ldap.Data.NamaLengkap,
                             username: ldap.Data.Email,
                             email: ldap.Data.Email,
+                            jabatan: ldap.Data.PosText,
+                            idFungsi: ldap.Data.DivID,
                             tipe: typeLDAP,
                             role: roleDefault,
                             validator: validatorsRandom
@@ -199,10 +208,12 @@ UsersController.login = async(req, res, next) => {
 
                         result = {
                             token: token,
-                            pernr: ldap.Data.EmpNumber,
+                            nopek: ldap.Data.EmpNumber,
                             name: ldap.Data.NamaLengkap,
                             username: ldap.Data.Email,
                             email: ldap.Data.Email,
+                            jabatan: ldap.Data.PosText,
+                            idFungsi: ldap.Data.DivID,
                             tipe: typeLDAP,
                             role: roleDefault,
                         }
