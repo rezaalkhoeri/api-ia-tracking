@@ -524,37 +524,76 @@ LHAController.searchLHAController = async(req, res, next) => {
                 parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
             )            
         } else if( page == 'auditee') {
-            let { tipe, dueDate } = req.body
-            let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, T.ID_TEMUAN, T.JudulTemuan, R.ID_REKOMENDASI, R.JudulRekomendasi, LHA.TipeLHA, R.DueDate, R.StatusTL
+            if (req.currentUser.body.role == '4') {
+                let { tipe, dueDate } = req.body
+                let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, T.ID_TEMUAN, T.JudulTemuan, R.ID_REKOMENDASI, R.JudulRekomendasi, LHA.TipeLHA, R.DueDate, R.StatusTL
                         FROM tblt_rekomendasi R
                         LEFT JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
                         INNER JOIN tblt_lha LHA ON LHA.ID_LHA = T.ID_LHA
                         WHERE LHA.StatusLHA = 'A1' AND T.StatusTemuan = 'A1' AND R.StatusTL = 'A1' 
-                        AND LHA.TipeLHA = '`+ tipe +`' AND CURDATE()`+ dueDate +`R.DueDate
+                        AND LHA.TipeLHA = '`+ tipe + `' AND CURDATE()` + dueDate + `R.DueDate
                         ORDER BY LHA.NomorLHA ASC`
-    
-            let dbSearch = await LHAModel.QueryCustom(sql);
 
-            let obj = dbSearch.rows
-            result = _.map(obj, function (data) {
-                return dataLHA = {
-                    ID_LHA: data.ID_LHA,
-                    NomorLHA: data.NomorLHA,
-                    JudulLHA: data.JudulLHA,
-                    ID_TEMUAN: data.ID_TEMUAN,
-                    JudulTemuan: data.JudulTemuan,
-                    ID_REKOMENDASI: data.ID_REKOMENDASI,
-                    JudulRekomendasi: data.JudulRekomendasi,
-                    TipeLHA: data.TipeLHA,
-                    DueDate: moment(data.DueDate).format('YYYY-MM-DD'),
-                    StatusTL: data.StatusTL
-                }
-            });
-            
-            // success
-            res.status(200).send(
-                parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
-            )                        
+                let dbSearch = await LHAModel.QueryCustom(sql);
+
+                let obj = dbSearch.rows
+                result = _.map(obj, function (data) {
+                    return dataLHA = {
+                        ID_LHA: data.ID_LHA,
+                        NomorLHA: data.NomorLHA,
+                        JudulLHA: data.JudulLHA,
+                        ID_TEMUAN: data.ID_TEMUAN,
+                        JudulTemuan: data.JudulTemuan,
+                        ID_REKOMENDASI: data.ID_REKOMENDASI,
+                        JudulRekomendasi: data.JudulRekomendasi,
+                        TipeLHA: data.TipeLHA,
+                        DueDate: moment(data.DueDate).format('YYYY-MM-DD'),
+                        StatusTL: data.StatusTL
+                    }
+                });
+
+                // success
+                res.status(200).send(
+                    parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
+                )
+            } else {
+                let idFungsi = req.currentUser.body.idFungsi
+                let { tipe, dueDate } = req.body
+                let sql = `SELECT DISTINCT R.ID_REKOMENDASI, R.JudulRekomendasi, LHA.TipeLHA, R.DueDate, R.StatusTL, LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, T.ID_TEMUAN, T.JudulTemuan
+                            FROM tblm_fungsi F 
+                            LEFT JOIN tblm_sub_fungsi SF ON F.ID_FUNGSI = SF.ID_FUNGSI 
+                            LEFT JOIN tblt_rekomendasi_fungsi RF ON RF.ID_SUBFUNGSI = SF.ID_SUBFUNGSI
+                            LEFT JOIN tblt_rekomendasi R ON R.ID_REKOMENDASI = RF.ID_REKOMENDASI
+                            LEFT JOIN tblt_temuan T ON T.ID_TEMUAN = R.ID_TEMUAN
+                            LEFT JOIN tblt_lha LHA ON LHA.ID_LHA = T.ID_LHA
+                            WHERE F.ID_FUNGSI = '`+ idFungsi +`' 
+                            AND LHA.StatusLHA = 'A1' AND T.StatusTemuan = 'A1' AND R.StatusTL = 'A1' 
+                            AND LHA.TipeLHA = '`+ tipe +`' AND CURDATE() `+ dueDate +` R.DueDate
+                            ORDER BY LHA.NomorLHA ASC`
+
+                let dbSearch = await LHAModel.QueryCustom(sql);
+
+                let obj = dbSearch.rows
+                result = _.map(obj, function (data) {
+                    return dataLHA = {
+                        ID_LHA: data.ID_LHA,
+                        NomorLHA: data.NomorLHA,
+                        JudulLHA: data.JudulLHA,
+                        ID_TEMUAN: data.ID_TEMUAN,
+                        JudulTemuan: data.JudulTemuan,
+                        ID_REKOMENDASI: data.ID_REKOMENDASI,
+                        JudulRekomendasi: data.JudulRekomendasi,
+                        TipeLHA: data.TipeLHA,
+                        DueDate: moment(data.DueDate).format('YYYY-MM-DD'),
+                        StatusTL: data.StatusTL
+                    }
+                });
+
+                // success
+                res.status(200).send(
+                    parseResponse(true, result, '00', 'Get Rekomendasi Controller Success')
+                )                
+            }
         } else if (page == 'report') {
             let {fromDate, toDate} = req.body
             let sql = `SELECT LHA.ID_LHA, LHA.NomorLHA, LHA.JudulLHA, LHA.TanggalLHA, LHA.TipeLHA, LHA.StatusLHA, coalesce(X.totTemuan, 0) AS TotalTemuan, coalesce(Y.totRekomendasi, 0) AS TotalRekomendasi
