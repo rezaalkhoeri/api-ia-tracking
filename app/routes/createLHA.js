@@ -9,4 +9,7 @@ router
     .post('/addRekomendasi', CreateLHAController.AddRekomendasiController)
     .post('/submit', CreateLHAController.SubmitController)
 
+    .post('/saveLHA', CreateLHAController.SaveLHAController)
+    .post('/saveTemuan', CreateLHAController.SaveTemuanController)
+
 module.exports = router

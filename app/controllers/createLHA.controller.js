@@ -5,6 +5,7 @@ const RekomendasiModel            = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel      = require('../models/fungsi_rekomendasi.model');
 const LogActivityModel            = require('../models/log_activity.model');
 const _                           = require('lodash');
+const moment                      = require('moment');
 const parseResponse               = require('../helpers/parse-response')
 const log                         = 'Create LHA controller';
 
@@ -468,5 +469,389 @@ CreateLHAController.SubmitController = async(req, res, next) => {
     }
 }
 
+CreateLHAController.SaveLHAController = async (req, res, next) => {
+    console.log(`├── ${log} :: Create LHA Data Controller`);
+
+    try {
+        console.log(req.currentUser.body.role);
+        
+        if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
+            let { action, nomorLHA, judulLHA, tglLHA, tipeLHA } = req.body
+            
+            if (action == 'create') {
+                let condition = [{ key: 'NomorLHA', value: nomorLHA }]
+                let cekData = await LHAModel.getAll('*', condition)
+
+                if (!cekData.length > 0) {
+                    let filename = []
+                    if (req.files == null) {
+
+                    } else {
+                        sampleFile = req.files.dokumenAudit
+                        filename.push(nomorLHA + '_' + sampleFile.name)
+                        uploadPath = __dirname + './../public/Dokumen LHA/' + nomorLHA + '_' + sampleFile.name
+
+                        sampleFile.mv(uploadPath, function (err) {
+                            if (err) {
+                                statusCode = 200
+                                responseCode = '41'
+                                message = 'Upload dokumen gagal !'
+                                acknowledge = false
+                                result = null
+                            }
+                        });
+                    }
+
+                    let dataLHA = [
+                        { key: 'NomorLHA', value: nomorLHA },
+                        { key: 'JudulLHA', value: judulLHA },
+                        { key: 'DokumenAudit', value: filename[0] },
+                        { key: 'TanggalLHA', value: tglLHA },
+                        { key: 'TipeLHA', value: tipeLHA },
+                        { key: 'StatusLHA', value: 'A0' },
+                        { key: 'CreatedBy', value: req.currentUser.body.userid },
+                    ]
+
+                    let insertLHA = await LHAModel.save(dataLHA);
+
+                    if (insertLHA.success == true) {
+                        let where = [{ key: 'NomorLHA', value: nomorLHA }]
+                        let getLHA = await LHAModel.getAll('*', where)
+
+                        let obj = getLHA
+                        dataLHA = _.map(obj, function (data) {
+                            return dataLHA = {
+                                ID_LHA: data.ID_LHA,
+                                NomorLHA: data.NomorLHA,
+                                JudulLHA: data.JudulLHA,
+                                DokumenAudit: data.DokumenAudit,
+                                TanggalLHA: moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                                TipeLHA: data.TipeLHA,
+                                StatusLHA: data.StatusLHA,
+                            }
+                        });
+
+                        let logData = [
+                            { key: 'ID_LHA', value: dataLHA[0].ID_LHA },
+                            { key: 'UserId', value: req.currentUser.body.userid },
+                            { key: 'Activity', value: 'Create LHA status A0 (DRAFT)' },
+                            { key: 'AdditionalInfo', value: 'Create LHA ' + nomorLHA + '.' },
+                            { key: 'Type', value: 'New' }
+                        ]
+                        let log = await LogActivityModel.save(logData);
+
+                        if (log.success == true) {
+                            statusCode = 200
+                            acknowledge = true
+                            responseCode = '00'
+                            message = 'Insert LHA Controller Success!'
+                            result = dataLHA
+                        } else {
+                            statusCode = 200
+                            acknowledge = false
+                            responseCode = '99'
+                            message = 'Insert LHA Controller Failed!'
+                            result = null                            
+                        }
+                    } else {
+                        statusCode = 200
+                        acknowledge = false
+                        responseCode = '99'
+                        message = 'Insert LHA Controller Failed!'
+                        result = null
+                    }
+                } else {
+                    statusCode = 200
+                    acknowledge = false
+                    responseCode = '99'
+                    message = 'Nomor LHA sudah ada! Mohon periksa kembali.'
+                    result = null
+                }                
+            } else if (action == 'update'){
+                let { idLHA } = req.body
+                let condition = [{key:'ID_LHA', value:idLHA}]
+                let check = await LHAModel.getAll('*', condition)
+
+                if (check.length > 0) {
+                    let filename = []
+                    if (req.files == null) {
+
+                    } else {
+                        sampleFile = req.files.dokumenAudit
+                        filename.push(nomorLHA + '_' + sampleFile.name)
+                        uploadPath = __dirname + './../public/Dokumen LHA/' + nomorLHA + '_' + sampleFile.name
+
+                        sampleFile.mv(uploadPath, function (err) {
+                            if (err) {
+                                statusCode = 200
+                                responseCode = '41'
+                                message = 'Upload dokumen gagal !'
+                                acknowledge = false
+                                result = null
+                            }
+                        });
+                    }
+
+                    let dataLHA = [
+                        { key: 'NomorLHA', value: nomorLHA },
+                        { key: 'JudulLHA', value: judulLHA },
+                        { key: 'DokumenAudit', value: filename[0] },
+                        { key: 'TanggalLHA', value: tglLHA },
+                        { key: 'TipeLHA', value: tipeLHA },
+                        { key: 'StatusLHA', value: 'A0' },
+                        { key: 'CreatedBy', value: req.currentUser.body.userid },
+                    ]
+
+                    let updateLHA = await LHAModel.save(dataLHA, condition);
+
+                    if (updateLHA.success == true) {
+                        let getLHA = await LHAModel.getAll('*', condition)
+
+                        let obj = getLHA
+                        dataLHA = _.map(obj, function (data) {
+                            return dataLHA = {
+                                ID_LHA: data.ID_LHA,
+                                NomorLHA: data.NomorLHA,
+                                JudulLHA: data.JudulLHA,
+                                JudulLHA: data.DokumenAudit,
+                                TanggalLHA: moment(data.TanggalLHA).format('YYYY-MM-DD'),
+                                TipeLHA: data.TipeLHA,
+                                StatusLHA: data.StatusLHA,
+                            }
+                        });
+
+                        let logData = [
+                            { key: 'ID_LHA', value: dataLHA[0].ID_LHA },
+                            { key: 'UserId', value: req.currentUser.body.userid },
+                            { key: 'Activity', value: 'Update LHA status A0 (DRAFT)' },
+                            { key: 'AdditionalInfo', value: 'Update LHA ' + nomorLHA + '.' },
+                            { key: 'Type', value: 'New' }
+                        ]
+                        let log = await LogActivityModel.save(logData);
+
+                        if (log.success == true) {
+                            statusCode = 200
+                            acknowledge = true
+                            responseCode = '00'
+                            message = 'Update LHA Controller Success!'
+                            result = dataLHA                            
+                        } else {
+                            statusCode = 200
+                            acknowledge = false
+                            responseCode = '99'
+                            message = 'Update LHA Controller Failed!'
+                            result = null                            
+                        }
+                    } else {
+                        statusCode = 200
+                        acknowledge = false
+                        responseCode = '99'
+                        message = 'Update LHA Controller Failed!'
+                        result = null
+                    }                    
+                } else {
+                    statusCode = 200
+                    acknowledge = false
+                    responseCode = '99'
+                    message = "LHA does not exist!"
+                    result = null
+                }
+            } else if (action == 'delete'){
+                let { idLHA } = req.body
+                let condition = [{ key: 'ID_LHA', value: idLHA }]
+                let check = await LHAModel.getAll('*', condition)
+
+                if (check.length > 0) {
+                    let hapusLHA = await LHAModel.delete(condition)
+                    if (hapusLHA.success == true) {
+                        statusCode = 200
+                        acknowledge = true
+                        responseCode = '00'
+                        message = 'Delete LHA Controller Success!'
+                        result = null                        
+                    } else {
+                        statusCode = 200
+                        acknowledge = false
+                        responseCode = '99'
+                        message = 'Delete LHA Controller Failed!'
+                        result = null                        
+                    }
+                } else {
+                    statusCode = 200
+                    acknowledge = false
+                    responseCode = '99'
+                    message = "LHA does not exist!"
+                    result = null                    
+                }
+            }
+        } else {
+            statusCode = 200
+            acknowledge = false
+            responseCode = '99'
+            message = "You haven't permission!"
+            result = null
+        }
+
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+    } catch (error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+CreateLHAController.SaveTemuanController = async (req, res, next) => {
+    console.log(`├── ${log} :: Create LHA Data Controller`);
+
+    try {
+        console.log(req.currentUser.body.role);
+
+        if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
+
+            let { idLHA, temuan } = req.body
+            let where = [{key:'ID_LHA', value:idLHA}]
+            let check = await TemuanModel.getAll('*', where)
+
+            if (check.length > 0) {
+                let hapusTemuan = await TemuanModel.delete(where)
+                if (hapusTemuan.success == true) {
+                    let getTemuan = JSON.parse(temuan)
+                    let dataTemuan = []
+                    for (let i = 0; i < getTemuan.length; i++) {
+                        dataTemuan.push([
+                            { key: 'ID_LHA', value: idLHA },
+                            { key: 'JudulTemuan', value: getTemuan[i].judulTemuan },
+                            { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi },
+                            { key: 'Nominal', value: getTemuan[i].nominal },
+                            { key: 'StatusTemuan', value: 'A0' },
+                            { key: 'CreatedBy', value: req.currentUser.body.userid },
+                        ])
+                    }
+
+                    let temuanRes = []
+                    for (let x = 0; x < dataTemuan.length; x++) {
+                        let insertTemuan = await TemuanModel.save(dataTemuan[x]);
+                        temuanRes.push(insertTemuan.success)
+                    }
+
+                    let temuanInsert = temuanRes.every(myFunction);
+                    function myFunction(value) {
+                        return value == true;
+                    }
+
+                    if (temuanInsert == true) {
+                        let getLHA = await LHAModel.getAll('*', where)
+                        let logData = [
+                            { key: 'ID_LHA', value: idLHA },
+                            { key: 'UserId', value: req.currentUser.body.userid },
+                            { key: 'Activity', value: 'Menambahkan Temuan status A0 (DRAFT)' },
+                            { key: 'AdditionalInfo', value: 'Menambahkan ' + dataTemuan.length + ' temuan pada LHA ' + getLHA[0].NomorLHA + '.' },
+                            { key: 'Type', value: 'New' }
+                        ]
+                        let log = await LogActivityModel.save(logData);
+
+                        if (log.success == true) {
+                            let condition = [{ key: 'ID_LHA', value: idLHA }]
+                            let getTemuan = await TemuanModel.getAll('*', condition)
+
+                            statusCode = 200
+                            acknowledge = true
+                            responseCode = '00'
+                            message = 'Add Temuan Controller Success'
+                            result = getTemuan
+                        }
+                    } else {
+                        statusCode = 200
+                        acknowledge = false
+                        responseCode = '99'
+                        message = 'Add Temuan Controller Failed'
+                        result = null
+                    }
+                } else {
+                    statusCode = 200
+                    acknowledge = false
+                    responseCode = '99'
+                    message = 'Add Temuan Controller Failed'
+                    result = null                    
+                }
+            } else {
+                let getTemuan = JSON.parse(temuan)
+                let dataTemuan = []
+                for (let i = 0; i < getTemuan.length; i++) {
+                    dataTemuan.push([
+                        { key: 'ID_LHA', value: idLHA },
+                        { key: 'JudulTemuan', value: getTemuan[i].judulTemuan },
+                        { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi },
+                        { key: 'Nominal', value: getTemuan[i].nominal },
+                        { key: 'StatusTemuan', value: 'A0' },
+                        { key: 'CreatedBy', value: req.currentUser.body.userid },
+                    ])
+                }
+
+                let temuanRes = []
+                for (let x = 0; x < dataTemuan.length; x++) {
+                    let insertTemuan = await TemuanModel.save(dataTemuan[x]);
+                    temuanRes.push(insertTemuan.success)
+                }
+
+                let temuanInsert = temuanRes.every(myFunction);
+                function myFunction(value) {
+                    return value == true;
+                }
+
+                if (temuanInsert == true) {
+                    let getLHA = await LHAModel.getAll('*', where)
+                    let logData = [
+                        { key: 'ID_LHA', value: idLHA },
+                        { key: 'UserId', value: req.currentUser.body.userid },
+                        { key: 'Activity', value: 'Menambahkan Temuan status A0 (DRAFT)' },
+                        { key: 'AdditionalInfo', value: 'Menambahkan ' + dataTemuan.length + ' temuan pada LHA ' + getLHA[0].NomorLHA + '.' },
+                        { key: 'Type', value: 'New' }
+                    ]
+                    let log = await LogActivityModel.save(logData);
+
+                    if (log.success == true) {
+                        let condition = [{ key: 'ID_LHA', value: idLHA }]
+                        let getTemuan = await TemuanModel.getAll('*', condition)
+
+                        statusCode = 200
+                        acknowledge = true
+                        responseCode = '00'
+                        message = 'Add Temuan Controller Success'
+                        result = getTemuan
+                    }
+                } else {
+                    statusCode = 200
+                    acknowledge = false
+                    responseCode = '99'
+                    message = 'Add Temuan Controller Failed'
+                    result = null
+                }
+            }
+        } else {
+            statusCode = 200
+            acknowledge = false
+            responseCode = '99'
+            message = "You haven't permission!"
+            result = null
+        }
+
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+    } catch (error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
 
 module.exports = CreateLHAController

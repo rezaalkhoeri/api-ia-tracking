@@ -25,7 +25,7 @@ EmailController.findRecipient = async (req, res, next) => {
         LEFT JOIN tblm_pic pic ON rf.ID_SUBFUNGSI = pic.ID_SUBFUNGSI AND pic.Status = '1' 
         LEFT JOIN tblm_sub_fungsi mf ON pic.ID_SUBFUNGSI = mf.ID_SUBFUNGSI 
         WHERE L.ID_LHA = '` + idLHA + `' GROUP BY pic.EmailPekerja, mf.NamaSub, L.JudulLHA`
-console.log(querySetan)
+        console.log(querySetan)
         let receiverData    = await LHAModel.QueryCustom(querySetan)
         
         let emailPenerima = ""
