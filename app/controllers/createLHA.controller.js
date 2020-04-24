@@ -227,119 +227,150 @@ CreateLHAController.AddRekomendasiController = async(req, res, next) => {
     console.log(`├── ${log} :: Create LHA Data Controller`);
 
     try {
+        if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4){
+            let { action, idLHA } = req.body
 
-        let { action, idLHA, createdBy } = req.body
+            if (action == 'create') {
+                let { rekomendasi } = req.body
+                let getRekomendasi = JSON.parse(rekomendasi)
 
-        if (action == 'create') {
-
-            let { rekomendasi } = req.body
-            let getRekomendasi = JSON.parse(rekomendasi)
-            
-            let dataRekomendasi = []
-            let dataPICFungsi = []
-            for (let i = 0; i < getRekomendasi.length; i++) {
-                dataRekomendasi.push([
-                    { key: 'ID_TEMUAN', value: getRekomendasi[i].idTemuan},               
-                    { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi},
-                    { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL},
-                    { key: 'StatusTL', value: 'A0'},
-                    { key: 'DueDate', value: getRekomendasi[i].dueDate},
-                    { key: 'CreatedBy', value: createdBy},
-                ])
-    
-                dataPICFungsi.push(getRekomendasi[i].PICfungsi)
-            }
-                 
-            let insertRekomendasi = []
-            for (let z = 0; z < dataRekomendasi.length; z++) {
-                let rekomendasiSave = await RekomendasiModel.save(dataRekomendasi[z])
-                insertRekomendasi.push(rekomendasiSave.success)
-            }
-               
-            let cekRekomendasi = insertRekomendasi.every(myFunction);
-            function myFunction(value) {
-                return value == true;
-            }
-    
-            if (cekRekomendasi == true) {
-                let temuanID = []
-                for (let y = 0; y < getRekomendasi.length; y++) {
-                    temuanID.push(getRekomendasi[y].idTemuan)
-                }
-
-                function onlyUnique(value, index, self) { 
+                function onlyUnique(value, index, self) {
                     return self.indexOf(value) === index;
                 }
-                let unique = temuanID.filter( onlyUnique );
 
-                IDrekomendasi = []
-                for (let i = 0; i < unique.length; i++) {
-                    let whereTemuan = [{ key: 'ID_TEMUAN', value: unique[i]}]
-                    let getRekID = await RekomendasiModel.getAll('ID_REKOMENDASI', whereTemuan)
-                    IDrekomendasi.push(getRekID)
+                let whereLHA = [{key:'ID_LHA', value:idLHA}]
+                let getTemuan = await TemuanModel.getAll('ID_TEMUAN', whereLHA)
+
+                let oldRekomendasi = []
+                for (let a = 0; a < getTemuan.length; a++) {
+                    let whereTemuan = [{key:'ID_TEMUAN', value:getTemuan[a].ID_TEMUAN}]
+                    let getOldRek = await RekomendasiModel.getAll('*', whereTemuan)
+                    oldRekomendasi.push(getOldRek)
+                    await RekomendasiModel.delete(whereTemuan)
                 }
 
-                let merged = [].concat.apply([], IDrekomendasi);
-
-                let fungsiRekomendasi = []
-                for (let i = 0; i < merged.length; i++) {
-                    for (let x = 0; x < dataPICFungsi[i].length; x++) {
-                        fungsiRekomendasi.push([
-                            { key: 'ID_REKOMENDASI', value: merged[i].ID_REKOMENDASI},
-                            { key: 'ID_SUBFUNGSI', value: dataPICFungsi[i][x].idSubFungsi},
-                        ])
-                    }
+                let oldRek = [].concat.apply([], oldRekomendasi.filter(onlyUnique)) ;
+                
+                for (let f = 0; f < oldRek.length; f++) {
+                    let whereRek = [{ key: 'ID_REKOMENDASI', value: oldRek[f].ID_REKOMENDASI }]
+                    await FungsiRekomendasiModel.delete(whereRek)
                 }
 
-                let PICfungsidata = []
-                for (let z = 0; z < fungsiRekomendasi.length; z++) {
-                    let fungsiRekSave = await FungsiRekomendasiModel.save(fungsiRekomendasi[z])
-                    PICfungsidata.push(fungsiRekSave.success)
+                let dataRekomendasi = []
+                let dataPICFungsi = []
+                for (let i = 0; i < getRekomendasi.length; i++) {
+                    dataRekomendasi.push([
+                        { key: 'ID_TEMUAN', value: getRekomendasi[i].idTemuan },
+                        { key: 'JudulRekomendasi', value: getRekomendasi[i].judulRekomendasi },
+                        { key: 'BuktiTindakLanjut', value: getRekomendasi[i].buktiTL },
+                        { key: 'StatusTL', value: 'A0' },
+                        { key: 'DueDate', value: getRekomendasi[i].dueDate },
+                        { key: 'CreatedBy', value: req.currentUser.body.userid},
+                    ])
+
+                    dataPICFungsi.push(getRekomendasi[i].PICfungsi)
                 }
-        
-                let cekFungsiRekomendasi = PICfungsidata.every(myFunction);
+
+                let insertRekomendasi = []
+                for (let z = 0; z < dataRekomendasi.length; z++) {
+                    let rekomendasiSave = await RekomendasiModel.save(dataRekomendasi[z])
+                    insertRekomendasi.push(rekomendasiSave.success)
+                }
+
+                let cekRekomendasi = insertRekomendasi.every(myFunction);
                 function myFunction(value) {
                     return value == true;
                 }
-                    
-                if (cekFungsiRekomendasi == true) {
-                    let logData = [
-                        {key:'ID_LHA', value:idLHA},
-                        {key:'UserId', value:createdBy},
-                        {key:'Activity', value:'Add Rekomendasi status A0 (DRAFT)'},
-                        {key:'AdditionalInfo', value:'Menambahkan '+ dataRekomendasi.length +' rekomendasi.'},
-                        {key:'Type', value:'New'}
-                    ]
-                    let log = await LogActivityModel.save(logData);
 
-                    if (log.success == true) {
-                        postData = [ 
-                            {key:'Data Rekomendasi', value:dataRekomendasi},
-                            {key:'Data Fungsi Rekomendasi', value:fungsiRekomendasi},
-                        ]
-        
-                        statusCode      = 200
-                        responseCode    = '00'
-                        message         = 'Add Rekomendasi Fungsi Controller'
-                        acknowledge     = true
-                        result          = fungsiRekomendasi
+                if (cekRekomendasi == true) {
+                    IDrekomendasi = []
+                    for (let i = 0; i < getTemuan.length; i++) {
+                        let whereTemuan = [{ key: 'ID_TEMUAN', value: getTemuan[i].ID_TEMUAN }]
+                        let getRekID = await RekomendasiModel.getAll('*', whereTemuan)
+                        IDrekomendasi.push(getRekID)
                     }
+                    let IDRmerged = [].concat.apply([], IDrekomendasi);
+                
+                    let fungsiRekomendasi = []
+                    for (let i = 0; i < IDRmerged.length; i++) {
+                        let whereIDR = [{ key: 'ID_REKOMENDASI', value: IDRmerged[i].ID_REKOMENDASI }]
+                        await FungsiRekomendasiModel.delete(whereIDR)
+
+                        for (let x = 0; x < dataPICFungsi[i].length; x++) {
+                            fungsiRekomendasi.push([
+                                { key: 'ID_REKOMENDASI', value: IDRmerged[i].ID_REKOMENDASI },
+                                { key: 'ID_SUBFUNGSI', value: dataPICFungsi[i][x].idSubFungsi },
+                            ])
+                        }
+                    }
+
+                    let PICfungsidata = []
+                    for (let z = 0; z < fungsiRekomendasi.length; z++) {
+                        let fungsiRekSave = await FungsiRekomendasiModel.save(fungsiRekomendasi[z])
+                        PICfungsidata.push(fungsiRekSave.success)
+                    }
+
+                    let cekFungsiRekomendasi = PICfungsidata.every(myFunction);
+                    function myFunction(value) {
+                        return value == true;
+                    }
+
+                    if (cekFungsiRekomendasi == true) {
+                        let logData = [
+                            { key: 'ID_LHA', value: idLHA },
+                            { key: 'UserId', value: req.currentUser.body.userid },
+                            { key: 'Activity', value: 'Add Rekomendasi status A0 (DRAFT)' },
+                            { key: 'AdditionalInfo', value: 'Menambahkan ' + IDRmerged.length + ' rekomendasi.' },
+                            { key: 'Type', value: 'New' }
+                        ]
+                        let log = await LogActivityModel.save(logData);
+
+                        if (log.success == true) {
+                            statusCode = 200
+                            responseCode = '00'
+                            message = 'Add Rekomendasi Success'
+                            acknowledge = true
+                            result = IDRmerged
+                        } else {
+                            statusCode = 200
+                            responseCode = '99'
+                            message = 'Add Rekomendasi Failed'
+                            acknowledge = false
+                            result = null
+                        }
+                    } else {
+                        statusCode = 200
+                        responseCode = '99'
+                        message = 'Add Rekomendasi Failed'
+                        acknowledge = false
+                        result = null
+                    }
+                } else {
+                    statusCode = 200
+                    responseCode = '99'
+                    message = 'Add Rekomendasi Failed'
+                    acknowledge = false
+                    result = null
                 }
+            } else if (action == 'update') {
+                statusCode = 200
+                responseCode = '00'
+                message = 'Update Rekomendasi Fungsi Controller'
+                acknowledge = true
+                result = 'BELUM GAN! SUSAH SEKALI'
+            } else {
+                statusCode = 200
+                responseCode = '404'
+                message = 'Request not found'
+                acknowledge = false
+                result = null
             }
-    
-        } else if (action == 'update') {
-            statusCode      = 200
-            responseCode    = '00'
-            message         = 'Update Rekomendasi Fungsi Controller'
-            acknowledge     = true
-            result          = 'BELUM GAN! SUSAH SEKALI'
-            
         } else {
-            statusCode      = 200
-            responseCode    = '404'
-            message         = 'Request not found'
-            acknowledge     = false
-            result          = null
+            statusCode = 200
+            acknowledge = false
+            responseCode = '99'
+            message = "You haven't permission!"
+            result = null
         }
 
         res.status(statusCode).send(
@@ -360,7 +391,7 @@ CreateLHAController.SubmitController = async(req, res, next) => {
     console.log(`├── ${log} :: Create LHA Data Controller`);
 
     try {
-        let { idLHA, createdBy } = req.body
+        let { idLHA } = req.body
         let whereLHA = [{key:'ID_LHA', value: idLHA}]
         let getLHA = await LHAModel.getAll('*', whereLHA)
     
@@ -422,8 +453,8 @@ CreateLHAController.SubmitController = async(req, res, next) => {
         
                             let logData = [
                                 {key:'ID_LHA', value:idLHA},
-                                {key:'UserId', value:createdBy},
-                                {key:'Activity', value:'Submit LHA, Temuan & Rekomendasi to status A1 (OPEN)'},
+                                {key:'UserId', value: req.currentUser.body.userid},
+                                {key:'Activity', value:'Submit LHA '+ nomorLHA[0].NomorLHA +', Temuan & Rekomendasi to status A1 (OPEN)'},
                                 {key:'AdditionalInfo', value:'Menunggu tindak lanjut dari auditee.'},
                                 {key:'Type', value:'Submit'}
                             ]
@@ -432,7 +463,7 @@ CreateLHAController.SubmitController = async(req, res, next) => {
                             if (log.success == true) {
                                 statusCode      = 200
                                 responseCode    = '00'
-                                message         = 'Submit LHA Fungsi Controller'
+                                message         = 'Submit LHA Success'
                                 acknowledge     = true
                                 result          = submitData      
                             }
@@ -440,7 +471,7 @@ CreateLHAController.SubmitController = async(req, res, next) => {
                     } 
                 } else {
                     statusCode      = 200
-                    responseCode    = '44'
+                    responseCode    = '99'
                     message         = 'Temuan Not Found'
                     acknowledge     = false
                     result          = null
@@ -449,7 +480,7 @@ CreateLHAController.SubmitController = async(req, res, next) => {
     
         } else {
             statusCode      = 200
-            responseCode    = '44'
+            responseCode    = '99'
             message         = 'LHA Not Found'
             acknowledge     = false
             result          = null                    
@@ -473,8 +504,6 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
     console.log(`├── ${log} :: Create LHA Data Controller`);
 
     try {
-        console.log(req.currentUser.body.role);
-        
         if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
             let { action, nomorLHA, judulLHA, tglLHA, tipeLHA } = req.body
             
@@ -544,20 +573,20 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
                             statusCode = 200
                             acknowledge = true
                             responseCode = '00'
-                            message = 'Insert LHA Controller Success!'
+                            message = 'Insert LHA Success!'
                             result = dataLHA
                         } else {
                             statusCode = 200
                             acknowledge = false
                             responseCode = '99'
-                            message = 'Insert LHA Controller Failed!'
+                            message = 'Insert LHA Failed!'
                             result = null                            
                         }
                     } else {
                         statusCode = 200
                         acknowledge = false
                         responseCode = '99'
-                        message = 'Insert LHA Controller Failed!'
+                        message = 'Insert LHA Failed!'
                         result = null
                     }
                 } else {
@@ -633,20 +662,20 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
                             statusCode = 200
                             acknowledge = true
                             responseCode = '00'
-                            message = 'Update LHA Controller Success!'
+                            message = 'Update LHA Success!'
                             result = dataLHA                            
                         } else {
                             statusCode = 200
                             acknowledge = false
                             responseCode = '99'
-                            message = 'Update LHA Controller Failed!'
+                            message = 'Update LHA Failed!'
                             result = null                            
                         }
                     } else {
                         statusCode = 200
                         acknowledge = false
                         responseCode = '99'
-                        message = 'Update LHA Controller Failed!'
+                        message = 'Update LHA Failed!'
                         result = null
                     }                    
                 } else {
@@ -667,13 +696,13 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
                         statusCode = 200
                         acknowledge = true
                         responseCode = '00'
-                        message = 'Delete LHA Controller Success!'
+                        message = 'Delete LHA Success!'
                         result = null                        
                     } else {
                         statusCode = 200
                         acknowledge = false
                         responseCode = '99'
-                        message = 'Delete LHA Controller Failed!'
+                        message = 'Delete LHA Failed!'
                         result = null                        
                     }
                 } else {
@@ -709,8 +738,6 @@ CreateLHAController.SaveTemuanController = async (req, res, next) => {
     console.log(`├── ${log} :: Create LHA Data Controller`);
 
     try {
-        console.log(req.currentUser.body.role);
-
         if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
 
             let { idLHA, temuan } = req.body
@@ -762,21 +789,21 @@ CreateLHAController.SaveTemuanController = async (req, res, next) => {
                             statusCode = 200
                             acknowledge = true
                             responseCode = '00'
-                            message = 'Add Temuan Controller Success'
+                            message = 'Add Temuan Success'
                             result = getTemuan
                         }
                     } else {
                         statusCode = 200
                         acknowledge = false
                         responseCode = '99'
-                        message = 'Add Temuan Controller Failed'
+                        message = 'Add Temuan Failed'
                         result = null
                     }
                 } else {
                     statusCode = 200
                     acknowledge = false
                     responseCode = '99'
-                    message = 'Add Temuan Controller Failed'
+                    message = 'Add Temuan Failed'
                     result = null                    
                 }
             } else {
@@ -822,14 +849,14 @@ CreateLHAController.SaveTemuanController = async (req, res, next) => {
                         statusCode = 200
                         acknowledge = true
                         responseCode = '00'
-                        message = 'Add Temuan Controller Success'
+                        message = 'Add Temuan Success'
                         result = getTemuan
                     }
                 } else {
                     statusCode = 200
                     acknowledge = false
                     responseCode = '99'
-                    message = 'Add Temuan Controller Failed'
+                    message = 'Add Temuan Failed'
                     result = null
                 }
             }
