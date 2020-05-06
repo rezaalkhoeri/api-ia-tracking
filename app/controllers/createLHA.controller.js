@@ -21,8 +21,9 @@ CreateLHAController.createLHAController = async(req, res, next) => {
 
         } else {                   
             sampleFile = req.files.dokumenAudit
-            filename.push(nomorLHA+'_'+sampleFile.name)
-            uploadPath = __dirname+'./../public/Dokumen LHA/'+nomorLHA+'_'+sampleFile.name
+            // console.log(sampleFile);
+            filename.push(sampleFile.name)
+            uploadPath = __dirname+'./../public/Dokumen LHA/'+sampleFile.name
             
             sampleFile.mv(uploadPath, function(err) {
                 if (err) {
@@ -517,8 +518,8 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
 
                     } else {
                         sampleFile = req.files.dokumenAudit
-                        filename.push(nomorLHA + '_' + sampleFile.name)
-                        uploadPath = __dirname + './../public/Dokumen LHA/' + nomorLHA + '_' + sampleFile.name
+                        filename.push(sampleFile.name)
+                        uploadPath = __dirname + './../public/Dokumen LHA/' +sampleFile.name
 
                         sampleFile.mv(uploadPath, function (err) {
                             if (err) {
