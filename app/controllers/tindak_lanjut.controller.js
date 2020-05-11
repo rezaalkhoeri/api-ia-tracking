@@ -38,8 +38,9 @@ TLController.auditeeTLController = async(req, res, next) => {
 
     try{
 
-        let { action, idRF, createdBy } = req.body
-
+        let { action, idRF } = req.body
+        let createdBy = req.currentUser.body.userid
+        
         let whereRek = [{key:'ID_REKOMENDASI', value:idRF}]
         let getRek = await RekomendasiModel.getBy('*', whereRek)
         let whereTemuan = [{key:'ID_Temuan', value:getRek.ID_TEMUAN}]
@@ -217,6 +218,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
 
     try{
         let {idRekomendasi} = req.body
+        let createdBy = req.currentUser.body.userid
 
         let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
         let dataRekomendasi = await RekomendasiModel.getBy('*', whereR)
@@ -233,13 +235,13 @@ TLController.closeRekomendasiController = async(req, res, next) => {
         let getRekomendasi = await RekomendasiModel.getAll('*', Rekomendasicondition)
 
         if (getTL.length && getRekomendasi.length > 0) {
-            let {catatanAuditor, auditorBy} = req.body
+            let {catatanAuditor} = req.body
 
             let dataTL = [
                 {key:'CatatanFungsi', value:catatanAuditor},
                 {key:'StatusTL', value:'A3'},
                 {key:'TanggalAuditor', value: date.format(now, 'YYYY-MM-DD HH:mm:ss')},
-                {key:'AuditorBy', value:auditorBy}
+                {key:'AuditorBy', value:createdBy}
             ]
 
             let dataRek = [
@@ -283,7 +285,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                             if (statusLHA.success == true) {
                                 let logData = [
                                     {key:'ID_LHA', value:dataLHA.ID_LHA},
-                                    {key:'UserId', value:auditorBy},
+                                    {key: 'UserId', value: createdBy},
                                     {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
                                     {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRekomendasi.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
                                     {key:'Type', value:'Approval'}
@@ -299,7 +301,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                         } else {                    
                             let logData = [
                                 {key:'ID_LHA', value:dataLHA.ID_LHA},
-                                {key:'UserId', value:auditorBy},
+                                {key: 'UserId', value: createdBy},
                                 {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
                                 {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRekomendasi.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
                                 {key:'Type', value:'Approval'}
@@ -316,7 +318,7 @@ TLController.closeRekomendasiController = async(req, res, next) => {
                 } else {
                     let logData = [
                         {key:'ID_LHA', value:dataLHA.ID_LHA},
-                        {key:'UserId', value:auditorBy},
+                        {key: 'UserId', value: createdBy},
                         {key:'Activity', value:'Close Rekomendasi (Status A3 / CLOSE)'},
                         {key:'AdditionalInfo', value:'Close Rekomendasi : '+dataRekomendasi.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
                         {key:'Type', value:'Approval'}
@@ -358,7 +360,8 @@ TLController.rejectTLRekomendasiController = async(req, res, next) => {
     console.log(`├── ${log} :: Reject TL Rekomendasi Controller`);
 
     try{
-        let {idRekomendasi, catatanAuditor, createdBy} = req.body
+        let {idRekomendasi, catatanAuditor} = req.body
+        let createdBy = req.currentUser.body.userid
 
         let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
         let dataRek = await RekomendasiModel.getBy('*', whereR)
@@ -413,7 +416,8 @@ TLController.perpanjangDueDateController = async(req, res, next) => {
     console.log(`├── ${log} :: Perpanjang Due Date Rekomendasi Controller`);
 
     try{
-        let {idRekomendasi, dueDate, createdBy } = req.body
+        let {idRekomendasi, dueDate} = req.body
+        let createdBy = req.currentUser.body.userid
 
         let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
         let dataRek = await RekomendasiModel.getBy('*', whereR)
@@ -474,7 +478,8 @@ TLController.auditorUploadFileController = async(req, res, next) => {
             acknowledge     = false
             result          = null
         } else {
-            let {idRekomendasi, uploadFile, createdBy } = req.body
+            let {idRekomendasi} = req.body
+            let createdBy = req.currentUser.body.userid
 
             let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
             let dataRek = await RekomendasiModel.getBy('*', whereR)

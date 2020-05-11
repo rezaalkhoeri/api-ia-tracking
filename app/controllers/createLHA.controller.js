@@ -506,36 +506,17 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
 
     try {
         if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
-            let { action, nomorLHA, judulLHA, tglLHA, tipeLHA } = req.body
+            let { action, nomorLHA, judulLHA, tglLHA, tipeLHA, filename } = req.body
             
             if (action == 'create') {
                 let condition = [{ key: 'NomorLHA', value: nomorLHA }]
                 let cekData = await LHAModel.getAll('*', condition)
 
                 if (!cekData.length > 0) {
-                    let filename = []
-                    if (req.files == null) {
-
-                    } else {
-                        sampleFile = req.files.dokumenAudit
-                        filename.push(sampleFile.name)
-                        uploadPath = __dirname + './../public/Dokumen LHA/' +sampleFile.name
-
-                        sampleFile.mv(uploadPath, function (err) {
-                            if (err) {
-                                statusCode = 200
-                                responseCode = '41'
-                                message = 'Upload dokumen gagal !'
-                                acknowledge = false
-                                result = null
-                            }
-                        });
-                    }
-
                     let dataLHA = [
                         { key: 'NomorLHA', value: nomorLHA },
                         { key: 'JudulLHA', value: judulLHA },
-                        { key: 'DokumenAudit', value: filename[0] },
+                        { key: 'DokumenAudit', value: filename },
                         { key: 'TanggalLHA', value: tglLHA },
                         { key: 'TipeLHA', value: tipeLHA },
                         { key: 'StatusLHA', value: 'A0' },
