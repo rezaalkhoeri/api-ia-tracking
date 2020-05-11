@@ -584,29 +584,10 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
                 let check = await LHAModel.getAll('*', condition)
 
                 if (check.length > 0) {
-                    let filename = []
-                    if (req.files == null) {
-
-                    } else {
-                        sampleFile = req.files.dokumenAudit
-                        filename.push(nomorLHA + '_' + sampleFile.name)
-                        uploadPath = __dirname + './../public/Dokumen LHA/' + nomorLHA + '_' + sampleFile.name
-
-                        sampleFile.mv(uploadPath, function (err) {
-                            if (err) {
-                                statusCode = 200
-                                responseCode = '41'
-                                message = 'Upload dokumen gagal !'
-                                acknowledge = false
-                                result = null
-                            }
-                        });
-                    }
-
                     let dataLHA = [
                         { key: 'NomorLHA', value: nomorLHA },
                         { key: 'JudulLHA', value: judulLHA },
-                        { key: 'DokumenAudit', value: filename[0] },
+                        { key: 'DokumenAudit', value: filename },
                         { key: 'TanggalLHA', value: tglLHA },
                         { key: 'TipeLHA', value: tipeLHA },
                         { key: 'StatusLHA', value: 'A0' },
@@ -624,7 +605,7 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
                                 ID_LHA: data.ID_LHA,
                                 NomorLHA: data.NomorLHA,
                                 JudulLHA: data.JudulLHA,
-                                JudulLHA: data.DokumenAudit,
+                                DokumenAudit: data.DokumenAudit,
                                 TanggalLHA: moment(data.TanggalLHA).format('YYYY-MM-DD'),
                                 TipeLHA: data.TipeLHA,
                                 StatusLHA: data.StatusLHA,
