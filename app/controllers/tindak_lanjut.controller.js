@@ -55,30 +55,30 @@ TLController.auditeeTLController = async(req, res, next) => {
 
             if (checkTL.length > 0) {
  
-                let {catatanAuditee } = req.body
+                let {catatanAuditee, filename } = req.body
 
-                let filename =[]
-                if (req.files == null) {
-                    filename.push(checkTL[0].DokumenTL)
-                } else {                   
-                    sampleFile = req.files.dokumenTL;
-                    filename.push('TL_'+sampleFile.name)
-                    uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
+                // let filename =[]
+                // if (req.files == null) {
+                //     filename.push(checkTL[0].DokumenTL)
+                // } else {                   
+                //     sampleFile = req.files.dokumenTL;
+                //     filename.push('TL_'+sampleFile.name)
+                //     uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
                     
-                    sampleFile.mv(uploadPath, function(err) {
-                        if (err) {
-                            statusCode      = 200
-                            responseCode    = '41'
-                            message         = 'Upload dokumen gagal !'
-                            acknowledge     = false
-                            result          = null        
-                        }
-                    });
-                }
+                //     sampleFile.mv(uploadPath, function(err) {
+                //         if (err) {
+                //             statusCode      = 200
+                //             responseCode    = '41'
+                //             message         = 'Upload dokumen gagal !'
+                //             acknowledge     = false
+                //             result          = null        
+                //         }
+                //     });
+                // }
                 
                 let dataTL = [
                     { key:'ID_RF', value:idRF},
-                    { key:'DokumenTL', value: filename[0] },
+                    { key:'DokumenTL', value: filename },
                     { key:'CatatanAudit', value:catatanAuditee},
                     { key:'StatusTL', value:'A0'},
                     { key:'AuditeeBy', value:createdBy}
@@ -106,30 +106,30 @@ TLController.auditeeTLController = async(req, res, next) => {
                 }
        
             } else {
-                let { catatanAuditee, createdBy } = req.body
+                let { catatanAuditee, filename, createdBy } = req.body
 
-                let filename = []
-                if (req.files == null) {
+                // let filename = []
+                // if (req.files == null) {
                     
-                } else {                    
-                    sampleFile = req.files.dokumenTL;
-                    filename.push('TL_'+sampleFile.name)
-                    uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
+                // } else {                    
+                //     sampleFile = req.files.dokumenTL;
+                //     filename.push('TL_'+sampleFile.name)
+                //     uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
                     
-                    sampleFile.mv(uploadPath, function(err) {
-                        if (err) {
-                            statusCode      = 200
-                            responseCode    = '41'
-                            message         = 'Upload dokumen gagal !'
-                            acknowledge     = false
-                            result          = null        
-                        }
-                    });
-                }
+                //     sampleFile.mv(uploadPath, function(err) {
+                //         if (err) {
+                //             statusCode      = 200
+                //             responseCode    = '41'
+                //             message         = 'Upload dokumen gagal !'
+                //             acknowledge     = false
+                //             result          = null        
+                //         }
+                //     });
+                // }
         
                     let dataTL = [
                         { key:'ID_RF', value:idRF},
-                        { key:'DokumenTL', value: filename[0] },
+                        { key:'DokumenTL', value: filename },
                         { key:'CatatanAudit', value:catatanAuditee},
                         { key:'StatusTL', value:'A0'},
                         { key:'AuditeeBy', value:createdBy}
@@ -471,71 +471,49 @@ TLController.auditorUploadFileController = async(req, res, next) => {
 
     try{
 
-        if (req.files == null) {
-            statusCode      = 200
-            responseCode    = '99'
-            message         = 'File tidak ditemukan!'
-            acknowledge     = false
-            result          = null
-        } else {
-            let {idRekomendasi} = req.body
-            let createdBy = req.currentUser.body.userid
+        let {idRekomendasi, filename} = req.body
+        let createdBy = req.currentUser.body.userid
 
-            let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
-            let dataRek = await RekomendasiModel.getBy('*', whereR)
-            let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
-            let dataTemuan = await TemuanModel.getBy('*', whereT)
-            let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
-            let dataLHA = await LHAModel.getBy('*', whereL)
+        let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
+        let dataRek = await RekomendasiModel.getBy('*', whereR)
+        let whereT = [{key:'ID_Temuan', value:dataRek.ID_TEMUAN}]
+        let dataTemuan = await TemuanModel.getBy('*', whereT)
+        let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
+        let dataLHA = await LHAModel.getBy('*', whereL)
 
-            sampleFile = req.files.uploadFile
-            filename = 'TL_'+sampleFile.name
-            uploadPath = __dirname+'./../public/Dokumen TL/'+filename
+        let whereRekomendasi = [{key:'ID_RF', value:idRekomendasi}]
+        let fileData = [{key:'DokumenTL', value:filename}]
+        let upload = await TLModel.save(fileData, whereRekomendasi)
+
+        if (upload.success == true) {
+            let logData = [
+                {key:'ID_LHA', value:dataLHA.ID_LHA},
+                {key:'UserId', value:createdBy},
+                {key:'Activity', value:'Upload File Tindak Lanjut Rekomendasi By Auditor'},
+                {key:'AdditionalInfo', value:'Upload File pada Rekomendasi '+dataRek.JudulRekomendasi+', dan Temuan '+dataTemuan.JudulTemuan+'.'},
+                {key:'Type', value:'Approval'}
+            ]
+            let log = await LogActivityModel.save(logData);
             
-            sampleFile.mv(uploadPath, function(err) {
-                if (err) {
-                    statusCode      = 200
-                    responseCode    = '41'
-                    message         = 'Upload dokumen gagal !'
-                    acknowledge     = false
-                    result          = null        
-                }
-            });
-
-            let whereRekomendasi = [{key:'ID_RF', value:idRekomendasi}]
-            let fileData = [{key:'DokumenTL', value:filename}]
-            let upload = await TLModel.save(fileData, whereRekomendasi)
-
-            if (upload.success == true) {
-                let logData = [
-                    {key:'ID_LHA', value:dataLHA.ID_LHA},
-                    {key:'UserId', value:createdBy},
-                    {key:'Activity', value:'Upload File Tindak Lanjut Rekomendasi By Auditor'},
-                    {key:'AdditionalInfo', value:'Upload File pada Rekomendasi '+dataRek.JudulRekomendasi+', dan Temuan '+dataTemuan.JudulTemuan+'.'},
-                    {key:'Type', value:'Approval'}
-                ]
-                let log = await LogActivityModel.save(logData);
-                
-                if (log.success == true) {
-                    statusCode      = 200
-                    responseCode    = '00'
-                    message         = 'Auditor Upload File Controller Success!'
-                    acknowledge     = true
-                    result          = fileData                        
-                } else {
-                    statusCode      = 200
-                    responseCode    = '99'
-                    message         = 'Auditor Upload File Controller Gagal!'
-                    acknowledge     = false
-                    result          = null
-                }                 
+            if (log.success == true) {
+                statusCode      = 200
+                responseCode    = '00'
+                message         = 'Auditor Upload File Controller Success!'
+                acknowledge     = true
+                result          = fileData                        
             } else {
                 statusCode      = 200
                 responseCode    = '99'
                 message         = 'Auditor Upload File Controller Gagal!'
                 acknowledge     = false
                 result          = null
-            }
+            }                 
+        } else {
+            statusCode      = 200
+            responseCode    = '99'
+            message         = 'Auditor Upload File Controller Gagal!'
+            acknowledge     = false
+            result          = null
         }
 
         res.status(statusCode).send(
