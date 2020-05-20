@@ -1,11 +1,11 @@
 exports.ldapService = {
-    login: 'https://apps.pertamina.com/pdsidas/ldap/api/auth/Login',
+    login: 'http://10.13.1.53/ldapservice/api/auth/Login',
 }
 
 exports.email = {
-    mailSender:'yoga.herawan89@gmail.com',
-    nameSender:'Yoga Herawan',
-    url: 'https://apps.pertamina.com/pdsidas/emailapi/api/email/send',
+    mailSender: 'yoga.herawan@pertamina.com',
+    nameSender: 'Yoga Herawan',
+    url: 'http://10.13.1.55/pdsidas/emailapi/api/email/send',
 }
 
 module.exports = exports

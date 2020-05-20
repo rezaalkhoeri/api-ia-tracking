@@ -1,14 +1,14 @@
-const UsersController                       = {}
+const UsersController = {}
 const nJwt = require('njwt')
-const rp                                    = require('request-promise')
-const randomstring                          = require("randomstring")
-const UsersModel                            = require('../models/users.model')
-const parseResponse                         = require('../helpers/parse-response')
-const { generateToken, encryptPassword }    = require('../lib/jwt')
-const partnersApi                           = require('../helpers/partner-api')
-const log                                   = 'User controller'
+const rp = require('request-promise')
+const randomstring = require("randomstring")
+const UsersModel = require('../models/users.model')
+const parseResponse = require('../helpers/parse-response')
+const { generateToken, encryptPassword } = require('../lib/jwt')
+const partnersApi = require('../helpers/partner-api')
+const log = 'User controller'
 
-UsersController.login = async(req, res, next) => {
+UsersController.login = async (req, res, next) => {
     console.log(`├── ${log} :: Login User and Generate Token`);
 
     try {
@@ -17,20 +17,20 @@ UsersController.login = async(req, res, next) => {
             password
         } = req.body
 
-        let statusCode      = 200
-        let responseCode    = '00'
-        let message         = 'Login Success'
-        let acknowledge     = true
-        let result          = null
+        let statusCode = 200
+        let responseCode = '00'
+        let message = 'Login Success'
+        let acknowledge = true
+        let result = null
 
-        let pwdEncrypt      = await encryptPassword(password)
+        let pwdEncrypt = await encryptPassword(password)
 
         // check table ms_it_personal_data
         // if ZTIPE eq L (LDAP) then check userexistLDAP ? generate token
         // else not user LDAP then cek database table ms_it_personal_data and check password encrypt
         const emailParam = email.split('@')
 
-        if ((emailParam.length > 1) && (emailParam[1] == "pertamina.com")) {
+        if ((emailParam.length > 1) && ((emailParam[1] == "pertamina.com") || (emailParam[1] == "mitrakerja.pertamina.com"))) {
             let where = [{ key: 'Email', value: email }]
             let users_tbl = await UsersModel.getBy('*', where)
 
@@ -170,9 +170,9 @@ UsersController.login = async(req, res, next) => {
                         let typeLDAP = "LDAP"
                         let username = ldap.Data.Email.split('@')
 
-                        let roleDefault 
+                        let roleDefault
                         if (ldap.Data.DivID == '10060672') {
-                            roleDefault = '1'                            
+                            roleDefault = '1'
                         } else {
                             roleDefault = '2'
                         }
@@ -224,13 +224,13 @@ UsersController.login = async(req, res, next) => {
                         acknowledge = false
                         result = null
                     }
-                    
+
                 } else {
                     statusCode = 200
                     responseCode = '05'
                     message = 'Login Not Authorized, User not exist'
                     acknowledge = false
-                    result = null                    
+                    result = null
                 }
             } else {
                 // login not authorize
@@ -268,25 +268,25 @@ UsersController.login = async(req, res, next) => {
 
 UsersController.getUserDetail = async (req, res, next) => {
     try {
-        const { currentUser : { body : { email : email } } } = req
-        let options     = [
+        const { currentUser: { body: { email: email } } } = req
+        let options = [
             { key: 'Email', value: email }
         ]
-        let userCheck   = await UsersModel.getBy('*', options)
+        let userCheck = await UsersModel.getBy('*', options)
 
         // return response
         res.status(200).send(
             parseResponse(true, userCheck, '00', 'Get User Controller Success')
         )
-    } catch(error) {
+    } catch (error) {
 
     }
 }
 
-UsersController.getUsersDataController = async(req, res, next) => {
+UsersController.getUsersDataController = async (req, res, next) => {
     console.log(`├── ${log} :: Get Users Data Controller`);
 
-    try{
+    try {
         let sql = `SELECT * FROM user JOIN tblm_fungsi ON tblm_fungsi.ID_FUNGSI = user.ID_FUNGSI`
         let getUsers = await UsersModel.QueryCustom(sql);
 
@@ -294,7 +294,7 @@ UsersController.getUsersDataController = async(req, res, next) => {
         res.status(200).send(
             parseResponse(true, getUsers.rows, '00', 'Get Users Data Controller Success')
         )
-    } catch(error) {
+    } catch (error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)
         next({
@@ -304,10 +304,10 @@ UsersController.getUsersDataController = async(req, res, next) => {
     }
 }
 
-UsersController.getUsersDataByIDController = async(req, res, next) => {
+UsersController.getUsersDataByIDController = async (req, res, next) => {
     console.log(`├── ${log} :: Get Users Data By ID Controller`);
 
-    try{
+    try {
         let id = req.params.ID
         let where = [{ key: 'ID', value: id }]
 
@@ -317,7 +317,7 @@ UsersController.getUsersDataByIDController = async(req, res, next) => {
         res.status(200).send(
             parseResponse(true, sql, '00', 'Get Users By ID Controller Success')
         )
-    } catch(error) {
+    } catch (error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)
         next({
@@ -328,17 +328,17 @@ UsersController.getUsersDataByIDController = async(req, res, next) => {
 }
 
 
-UsersController.createUpdateUsersDataController = async(req, res, next) => {
+UsersController.createUpdateUsersDataController = async (req, res, next) => {
     console.log(`├── ${log} :: Create Update Users Data Controller`);
 
-    try {        
+    try {
         let { action, user_id, password, name, nopek, jabatan, perusahaan, email, role, fungsi } = req.body
 
         if (action == 'create') {
-            let condition = [{key:'UserID', value:user_id}]
+            let condition = [{ key: 'UserID', value: user_id }]
             let cekUser = await UsersModel.getAll('*', condition)
 
-            if (! cekUser.length > 0) {
+            if (!cekUser.length > 0) {
                 let where = [{ key: 'Email', value: email }]
                 let cekEmail = await UsersModel.getAll('*', where)
 
@@ -363,7 +363,7 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                         res.status(200).send(
                             parseResponse(true, data, '00', 'Insert Users Data Controller Success')
                         )
-                    }        
+                    }
                 } else {
                     statusCode = 200
                     responseCode = '44'
@@ -374,7 +374,7 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                     res.status(statusCode).send(
                         parseResponse(acknowledge, result, responseCode, message)
                     )
-                }                
+                }
             } else {
                 statusCode = 200
                 responseCode = '44'
@@ -389,11 +389,11 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
             }
         } else if (action == 'update') {
             let { id, status } = req.body
-            let condition = [{key:'ID', value:id}]
+            let condition = [{ key: 'ID', value: id }]
             let oldEmail = await UsersModel.getAll('Email', condition)
 
             console.log(oldEmail[0].Email);
-            
+
             if (email == oldEmail[0].Email) {
                 let where = [{ key: 'ID', value: id }]
                 let data = [
@@ -448,9 +448,9 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                     )
                 }
             }
-        } else if (action == 'delete'){
+        } else if (action == 'delete') {
             let { id } = req.body
-            let condition = [{key:'ID', value:id}]
+            let condition = [{ key: 'ID', value: id }]
             let hapus = await UsersModel.delete(condition)
 
             if (hapus.success == true) {
@@ -458,21 +458,21 @@ UsersController.createUpdateUsersDataController = async(req, res, next) => {
                     parseResponse(true, null, '00', 'Delete Users Data Controller Success')
                 )
             }
-            
+
         } else {
-            statusCode      = 200
-            responseCode    = '404'
-            message         = 'Request Not Found'
-            acknowledge     = false
-            result          = null
-            
+            statusCode = 200
+            responseCode = '404'
+            message = 'Request Not Found'
+            acknowledge = false
+            result = null
+
             // return response
             res.status(statusCode).send(
                 parseResponse(acknowledge, result, responseCode, message)
             )
         }
 
-    } catch(error) {
+    } catch (error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)
         next({
@@ -513,7 +513,7 @@ UsersController.logoutUsersDataController = async (req, res, next) => {
                         parseResponse(acknowledge, result, responseCode, message)
                     )
                 }
-            })            
+            })
         } else {
             res.status(200).send(
                 parseResponse(false, [], '99', 'There is Authentication Token not given')

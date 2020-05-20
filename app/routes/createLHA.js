@@ -11,5 +11,6 @@ router
 
     .post('/saveLHA', CreateLHAController.SaveLHAController)
     .post('/saveTemuan', CreateLHAController.SaveTemuanController)
+    .post('/deleteTemuanByID', CreateLHAController.DeleteTemuanByIDController)
 
 module.exports = router

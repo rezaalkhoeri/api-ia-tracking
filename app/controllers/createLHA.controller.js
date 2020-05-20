@@ -704,124 +704,134 @@ CreateLHAController.SaveTemuanController = async (req, res, next) => {
         if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
 
             let { idLHA, temuan } = req.body
-            let where = [{key:'ID_LHA', value:idLHA}]
-            let check = await TemuanModel.getAll('*', where)
+            getTemuan = JSON.parse(temuan)
 
-            if (check.length > 0) {
-                let hapusTemuan = await TemuanModel.delete(where)
-                if (hapusTemuan.success == true) {
-                    let getTemuan = JSON.parse(temuan)
-                    let dataTemuan = []
-                    for (let i = 0; i < getTemuan.length; i++) {
-                        dataTemuan.push([
-                            { key: 'ID_LHA', value: idLHA },
-                            { key: 'JudulTemuan', value: getTemuan[i].judulTemuan },
-                            { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi },
-                            { key: 'Nominal', value: getTemuan[i].nominal },
-                            { key: 'StatusTemuan', value: 'A0' },
-                            { key: 'CreatedBy', value: req.currentUser.body.userid },
-                        ])
-                    }
+            let temuanRes = []
+            for (let i = 0; i < getTemuan.length; i++) {
+                let where = [{ key: 'ID_TEMUAN', value: getTemuan[i].idTemuan }]
+                let check = await TemuanModel.getAll('*', where)
 
-                    let temuanRes = []
-                    for (let x = 0; x < dataTemuan.length; x++) {
-                        let insertTemuan = await TemuanModel.save(dataTemuan[x]);
-                        temuanRes.push(insertTemuan.success)
-                    }
-
-                    let temuanInsert = temuanRes.every(myFunction);
-                    function myFunction(value) {
-                        return value == true;
-                    }
-
-                    if (temuanInsert == true) {
-                        let getLHA = await LHAModel.getAll('*', where)
-                        let logData = [
-                            { key: 'ID_LHA', value: idLHA },
-                            { key: 'UserId', value: req.currentUser.body.userid },
-                            { key: 'Activity', value: 'Menambahkan Temuan status A0 (DRAFT)' },
-                            { key: 'AdditionalInfo', value: 'Menambahkan ' + dataTemuan.length + ' temuan pada LHA ' + getLHA[0].NomorLHA + '.' },
-                            { key: 'Type', value: 'New' }
-                        ]
-                        let log = await LogActivityModel.save(logData);
-
-                        if (log.success == true) {
-                            let condition = [{ key: 'ID_LHA', value: idLHA }]
-                            let getTemuan = await TemuanModel.getAll('*', condition)
-
-                            statusCode = 200
-                            acknowledge = true
-                            responseCode = '00'
-                            message = 'Add Temuan Success'
-                            result = getTemuan
-                        }
-                    } else {
-                        statusCode = 200
-                        acknowledge = false
-                        responseCode = '99'
-                        message = 'Add Temuan Failed'
-                        result = null
-                    }
-                } else {
-                    statusCode = 200
-                    acknowledge = false
-                    responseCode = '99'
-                    message = 'Add Temuan Failed'
-                    result = null                    
-                }
-            } else {
-                let getTemuan = JSON.parse(temuan)
-                let dataTemuan = []
-                for (let i = 0; i < getTemuan.length; i++) {
-                    dataTemuan.push([
+                if (check.length > 0) {
+                    let dataTemuan = [
                         { key: 'ID_LHA', value: idLHA },
                         { key: 'JudulTemuan', value: getTemuan[i].judulTemuan },
                         { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi },
                         { key: 'Nominal', value: getTemuan[i].nominal },
                         { key: 'StatusTemuan', value: 'A0' },
                         { key: 'CreatedBy', value: req.currentUser.body.userid },
-                    ])
-                }
-
-                let temuanRes = []
-                for (let x = 0; x < dataTemuan.length; x++) {
-                    let insertTemuan = await TemuanModel.save(dataTemuan[x]);
+                    ]
+                    let updateTemuan = await TemuanModel.save(dataTemuan,where);
+                    temuanRes.push(updateTemuan.success)
+                } else {
+                    let dataTemuan = [
+                        { key: 'ID_LHA', value: idLHA },
+                        { key: 'JudulTemuan', value: getTemuan[i].judulTemuan },
+                        { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi },
+                        { key: 'Nominal', value: getTemuan[i].nominal },
+                        { key: 'StatusTemuan', value: 'A0' },
+                        { key: 'CreatedBy', value: req.currentUser.body.userid },
+                    ]
+                    let insertTemuan = await TemuanModel.save(dataTemuan);
                     temuanRes.push(insertTemuan.success)
                 }
+            }
 
-                let temuanInsert = temuanRes.every(myFunction);
-                function myFunction(value) {
-                    return value == true;
+            let temuanInsert = temuanRes.every(myFunction);
+            function myFunction(value) {
+                return value == true;
+            }
+
+            if (temuanInsert == true) {
+                let condition = [{key:'ID_LHA',value:idLHA}]
+                let getLHA = await LHAModel.getAll('*',condition)
+                let logData = [
+                    { key: 'ID_LHA', value: idLHA },
+                    { key: 'UserId', value: req.currentUser.body.userid },
+                    { key: 'Activity', value: 'Menambahkan Temuan status A0 (DRAFT)' },
+                    { key: 'AdditionalInfo', value: 'Menambahkan ' + getTemuan.length + ' temuan pada LHA ' + getLHA[0].NomorLHA + '.' },
+                    { key: 'Type', value: 'New' }
+                ]
+                let log = await LogActivityModel.save(logData);
+
+                if (log.success == true) {
+                    let condition = [{ key: 'ID_LHA', value: idLHA }]
+                    let getTemuan = await TemuanModel.getAll('*', condition)
+
+                    statusCode = 200
+                    acknowledge = true
+                    responseCode = '00'
+                    message = 'Add Temuan Success'
+                    result = getTemuan
                 }
+            } else {
+                statusCode = 200
+                acknowledge = false
+                responseCode = '99'
+                message = 'Add Temuan Failed'
+                result = null
+            }
+        } else {
+            statusCode = 200
+            acknowledge = false
+            responseCode = '99'
+            message = "You haven't permission!"
+            result = null
+        }
 
-                if (temuanInsert == true) {
-                    let getLHA = await LHAModel.getAll('*', where)
-                    let logData = [
-                        { key: 'ID_LHA', value: idLHA },
-                        { key: 'UserId', value: req.currentUser.body.userid },
-                        { key: 'Activity', value: 'Menambahkan Temuan status A0 (DRAFT)' },
-                        { key: 'AdditionalInfo', value: 'Menambahkan ' + dataTemuan.length + ' temuan pada LHA ' + getLHA[0].NomorLHA + '.' },
-                        { key: 'Type', value: 'New' }
-                    ]
-                    let log = await LogActivityModel.save(logData);
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+    } catch (error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
 
-                    if (log.success == true) {
-                        let condition = [{ key: 'ID_LHA', value: idLHA }]
-                        let getTemuan = await TemuanModel.getAll('*', condition)
+CreateLHAController.DeleteTemuanByIDController = async (req, res, next) => {
+    console.log(`├── ${log} :: Create LHA Data Controller`);
 
+    try {
+        if (req.currentUser.body.role == 1 || req.currentUser.body.role == 3 || req.currentUser.body.role == 4) {
+            let {idTemuan} = req.body
+
+            let condition = [{key:'ID_TEMUAN', value:idTemuan}]
+            let cek = await TemuanModel.getAll('*', condition)
+
+            if (cek.length > 0) {
+                let cekRek = await RekomendasiModel.getAll('*', condition)
+                console.log(cekRek);                
+                if (cekRek.length > 0) {
+                    let hapusRek = await RekomendasiModel.delete(condition)
+                    if (hapusRek.success == true) {
+                        let hapus = await TemuanModel.delete(condition)
+                        if (hapus.success == true) {
+                            statusCode = 200
+                            acknowledge = true
+                            responseCode = '00'
+                            message = "Delete temuan success!"
+                            result = null
+                        }
+                    }                    
+                } else {
+                    let hapus = await TemuanModel.delete(condition)
+                    if (hapus.success == true) {
                         statusCode = 200
                         acknowledge = true
                         responseCode = '00'
-                        message = 'Add Temuan Success'
-                        result = getTemuan
-                    }
-                } else {
-                    statusCode = 200
-                    acknowledge = false
-                    responseCode = '99'
-                    message = 'Add Temuan Failed'
-                    result = null
+                        message = "Delete temuan success!"
+                        result = null
+                    }                   
                 }
+            } else {
+                statusCode = 200
+                acknowledge = false
+                responseCode = '99'
+                message = "Temuan isn't exist!"
+                result = null                
             }
         } else {
             statusCode = 200
