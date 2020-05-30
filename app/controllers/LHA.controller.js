@@ -236,11 +236,16 @@ LHAController.getTemuanController = async(req, res, next) => {
                 };
             });
 
-            dataRekomendasi = await RekomendasiModel.getAll('*', whereTemuan[x])            
-            resultRekomendasi = _.map(dataRekomendasi, function(data){
+            let sql = `SELECT * FROM tblt_rekomendasi 
+                        JOIN tblt_temuan ON tblt_temuan.ID_TEMUAN = tblt_rekomendasi.ID_TEMUAN 
+                        WHERE tblt_rekomendasi.ID_TEMUAN =` + dbTemuan[x].ID_TEMUAN
+
+            dataRekomendasi = await RekomendasiModel.QueryCustom(sql)            
+            resultRekomendasi = _.map(dataRekomendasi.rows, function(data){
                 return rekomendasiData = {
                     ID_REKOMENDASI     : data.ID_REKOMENDASI,
                     ID_TEMUAN          : data.ID_TEMUAN,
+                    JudulTemuan        : data.JudulTemuan,
                     JudulRekomendasi   : data.JudulRekomendasi,
                     BuktiTindakLanjut  : data.BuktiTindakLanjut,
                     StatusTL           : data.StatusTL,
@@ -253,10 +258,10 @@ LHAController.getTemuanController = async(req, res, next) => {
 
             // PIC
             let pic =[]
-            for (let i = 0; i < dataRekomendasi.length; i++) {
-                wherePIC = dataRekomendasi[i].ID_REKOMENDASI
+            for (let i = 0; i < dataRekomendasi.rows.length; i++) {
+                wherePIC = dataRekomendasi.rows[i].ID_REKOMENDASI
                 sql = `SELECT tblt_rekomendasi_fungsi.ID_RF, tblt_rekomendasi.ID_REKOMENDASI, 
-                tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi 
+                tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi, tblm_sub_fungsi.ID_SUBFUNGSI, tblm_fungsi.ID_FUNGSI
                 FROM tblt_rekomendasi 
                 LEFT JOIN tblt_rekomendasi_fungsi ON tblt_rekomendasi.ID_REKOMENDASI = tblt_rekomendasi_fungsi.ID_REKOMENDASI
                 LEFT JOIN tblm_sub_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
@@ -271,17 +276,19 @@ LHAController.getTemuanController = async(req, res, next) => {
             for (let x = 0; x < pic.length; x++) {
                 let mappingFungsi = _.uniqBy(_.map(pic[x], function(data){
                         return fungsi = {
+                            IDFungsi       : data.ID_FUNGSI,
                             NamaFungsi     : data.NamaFungsi,
                         };
                     }),
                 'NamaFungsi')
-                NamaFungsi.push(mappingFungsi)        
+                NamaFungsi.push(mappingFungsi)
             }
 
             let NamaSub = []
             for (let x = 0; x < pic.length; x++) {
                 let mappingSub = _.map(pic[x], function(data){
                     return sub = {
+                        IDSubFungsi : data.ID_SUBFUNGSI,
                         NamaSub     : data.NamaSub,
                     };
                 })

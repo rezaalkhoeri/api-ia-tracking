@@ -1,5 +1,5 @@
 exports.ldapService = {
-    login: 'http://10.13.1.53/ldapservice/api/auth/Login',
+    login: 'https://apps.pertamina.com/pdsidas/ldap/api/auth/Login',
 }
 
 exports.email = {
