@@ -355,7 +355,6 @@ TLController.closeRekomendasiController = async(req, res, next) => {
     }
 }
 
-
 TLController.rejectTLRekomendasiController = async(req, res, next) => {
     console.log(`├── ${log} :: Reject TL Rekomendasi Controller`);
 

@@ -5,6 +5,7 @@ const RekomendasiModel          = require('../models/rekomendasi.model');
 const FungsiRekomendasiModel    = require('../models/fungsi_rekomendasi.model');
 const LogActivityModel          = require('../models/log_activity.model')
 const TLModel                   = require('../models/TL.model');
+const DueDateModel              = require('../models/dueDate.model');
 const _                         = require('lodash');
 const moment                    = require('moment');
 const parseResponse             = require('../helpers/parse-response')
@@ -297,8 +298,8 @@ LHAController.getTemuanController = async(req, res, next) => {
 
             // Tindak Lanjut
             tindakLanjut = []
-            for (let i = 0; i < dataRekomendasi.length; i++) {
-                whereIDRF = dataRekomendasi[i].ID_REKOMENDASI
+            for (let i = 0; i < dataRekomendasi.rows.length; i++) {
+                whereIDRF = dataRekomendasi.rows[i].ID_REKOMENDASI
                 sql = `SELECT * FROM tblt_rekomendasi_tindaklanjut WHERE tblt_rekomendasi_tindaklanjut.ID_RF =`+whereIDRF
                 dataTL = await TLModel.QueryCustom(sql)
                 tindakLanjut.push(dataTL.rows)
@@ -374,7 +375,7 @@ LHAController.getRekomendasibyIDController = async(req, res, next) => {
         let condition = [{ key:'ID_Rekomendasi', value:idRekomendasi}]
         let db = await RekomendasiModel.getAll('*', condition);
 
-        let sql = `SELECT tblm_sub_fungsi.NamaSub, tblm_fungsi.NamaFungsi FROM tblm_sub_fungsi 
+        let sql = `SELECT tblm_sub_fungsi.*, tblm_fungsi.* FROM tblm_sub_fungsi 
         JOIN tblm_fungsi ON tblm_sub_fungsi.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
         JOIN tblt_rekomendasi_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
         WHERE tblt_rekomendasi_fungsi.ID_REKOMENDASI =` + idRekomendasi
@@ -397,12 +398,14 @@ LHAController.getRekomendasibyIDController = async(req, res, next) => {
 
         resultFungsi = _.map(pic.rows, function(data){
             return rekomendasiData = {
+                IDFungsi       : data.ID_FUNGSI,
                 NamaFungsi     : data.NamaFungsi,
             };
         });
        
         resultSubFungsi = _.map(pic.rows, function(data){
             return rekomendasiData = {
+                IDSubFungsi   : data.ID_SUBFUNGSI,
                 SubFungsi     : data.NamaSub,
             };
         });
@@ -418,6 +421,71 @@ LHAController.getRekomendasibyIDController = async(req, res, next) => {
             parseResponse(true, postData, '00', 'Get Rekomendasi Controller Success')
         )
     } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+LHAController.getRekomendasibyIDLHAController = async (req, res, next) => {
+    console.log(`├── ${log} :: Get Rekomendasi By ID LHA Controller`);
+
+    try {
+        let { idLHA } = req.body
+        let condition = [{ key: 'ID_LHA', value: idLHA }]
+        let getTemuan = await TemuanModel.getAll('*', condition);
+
+        let dataRekomendasi = []
+        for (let i = 0; i < getTemuan.length; i++) {
+            let sql = `SELECT * FROM tblt_rekomendasi 
+            JOIN tblt_temuan ON tblt_temuan.ID_TEMUAN = tblt_rekomendasi.ID_TEMUAN 
+            WHERE tblt_rekomendasi.ID_TEMUAN =` + getTemuan[i].ID_TEMUAN
+
+            let rekomendasi = await FungsiRekomendasiModel.QueryCustom(sql);
+            dataRekomendasi.push(rekomendasi.rows)
+        }
+
+        let iniArray = [].concat.apply([], dataRekomendasi);
+
+        let RF = []
+        for (let i = 0; i < iniArray.length; i++) {
+            let sql = `SELECT tblm_sub_fungsi.*, tblm_fungsi.* FROM tblm_sub_fungsi 
+            JOIN tblm_fungsi ON tblm_sub_fungsi.ID_FUNGSI = tblm_fungsi.ID_FUNGSI
+            JOIN tblt_rekomendasi_fungsi ON tblm_sub_fungsi.ID_SUBFUNGSI = tblt_rekomendasi_fungsi.ID_SUBFUNGSI
+            WHERE tblt_rekomendasi_fungsi.ID_REKOMENDASI =` + iniArray[i].ID_REKOMENDASI
+
+            let fungsi = await FungsiRekomendasiModel.QueryCustom(sql);
+            RF.push(fungsi.rows)
+        }
+ 
+        resultRekomendasi = _.map(iniArray, function (data) {
+            return rekomendasiData = {
+                ID_REKOMENDASI: data.ID_REKOMENDASI,
+                ID_TEMUAN: data.ID_TEMUAN,
+                JudulTemuan: data.JudulTemuan,
+                JudulRekomendasi: data.JudulRekomendasi,
+                BuktiTindakLanjut: data.BuktiTindakLanjut,
+                StatusTL: data.StatusTL,
+                DueDate: moment(data.DueDate).format('YYYY-MM-DD'),
+                CloseDate: moment(data.CloseDate).format('YYYY-MM-DD'),
+                CreatedDate: moment(data.CreatedDate).format('YYYY-MM-DD'),
+                CreatedBy: data.CreatedBy
+            };
+        });
+
+        let postData = [{
+            rekomendasi: resultRekomendasi,
+            fungsi: RF,
+        }]
+
+        // success
+        res.status(200).send(
+            parseResponse(true, postData, '00', 'Get Rekomendasi Controller Success')
+        )
+    } catch (error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)
         next({
@@ -651,11 +719,11 @@ LHAController.searchLHAController = async(req, res, next) => {
     }
 }
 
-LHAController.editPICfungsiController = async(req, res, next) => {
+LHAController.editRekomendasiController = async(req, res, next) => {
     console.log(`├── ${log} :: Edit PIC Fungsi Rekomendasi Controller`);
 
     try{
-        let { idRekomendasi, createdBy } = req.body
+        let { idRekomendasi, judulRekomendasi, buktiTL, dueDate } = req.body
 
         let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
         let dataRek = await RekomendasiModel.getBy('*', whereR)
@@ -664,13 +732,67 @@ LHAController.editPICfungsiController = async(req, res, next) => {
         let whereL = [{key:'ID_LHA', value:dataTemuan.ID_LHA}]
         let dataLHA = await LHAModel.getBy('*', whereL)
 
+        let where = [{ key: 'ID_REKOMENDASI', value: idRekomendasi }]
 
-        let where = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
-        let checkID = await FungsiRekomendasiModel.getAll('*', where)
-        if (checkID.length > 0) {
-            let deleteOldPIC = await FungsiRekomendasiModel.delete(where)
+        let dataEdit = [
+            { key: 'JudulRekomendasi', value : judulRekomendasi},
+            { key: 'BuktiTindakLanjut', value: buktiTL},
+            { key: 'DueDate', value: dueDate }
+        ]
+        
+        let updateDate = await RekomendasiModel.save(dataEdit, where)
+        
+        if (updateDate.success == true) {
+            let checkID = await FungsiRekomendasiModel.getAll('*', where)
+            if (checkID.length > 0) {
+                let deleteOldPIC = await FungsiRekomendasiModel.delete(where)
 
-            if (deleteOldPIC.success = true) {
+                if (deleteOldPIC.success = true) {
+                    let { picFungsi } = req.body
+
+                    let GetPicFungsi = JSON.parse(picFungsi)
+
+                    let dataFungsi = []
+                    for (let i = 0; i < GetPicFungsi.length; i++) {
+                        dataFungsi.push([
+                            { key: 'ID_REKOMENDASI', value: idRekomendasi },
+                            { key: 'ID_SUBFUNGSI', value: GetPicFungsi[i].idSubFungsi }
+                        ])
+                    }
+
+                    let updateResult = []
+                    for (let x = 0; x < dataFungsi.length; x++) {
+                        let update = await FungsiRekomendasiModel.save(dataFungsi[x])
+                        updateResult.push(update.success)
+                    }
+
+                    let updatePICFungsi = updateResult.every(myFunction);
+                    function myFunction(value) {
+                        return value == true;
+                    }
+
+                    if (updatePICFungsi && updateDate.success == true) {
+                        let rekBaru = await RekomendasiModel.getAll('*', where)
+
+                        let logData = [
+                            { key: 'ID_LHA', value: dataLHA.ID_LHA },
+                            { key: 'UserId', value: req.currentUser.body.userid },
+                            { key: 'Activity', value: 'Edit PIC Fungsi' },
+                            { key: 'AdditionalInfo', value: 'Edit PIC Fungsi Rekomendasi : ' + rekBaru[0].JudulRekomendasi + ', Judul Temuan : ' + dataTemuan.JudulTemuan + '.' },
+                            { key: 'Type', value: 'New' }
+                        ]
+                        let log = await LogActivityModel.save(logData);
+
+                        if (log.success == true) {
+                            statusCode = 200
+                            responseCode = '00'
+                            message = 'Edit PIC Fungsi Rekomendasi Berhasil !'
+                            acknowledge = false
+                            result = rekBaru
+                        }
+                    }
+                }
+            } else {
                 let { picFungsi, dueDate } = req.body
 
                 let GetPicFungsi = JSON.parse(picFungsi)
@@ -678,12 +800,12 @@ LHAController.editPICfungsiController = async(req, res, next) => {
                 let dataFungsi = []
                 for (let i = 0; i < GetPicFungsi.length; i++) {
                     dataFungsi.push([
-                        {key:'ID_REKOMENDASI', value:idRekomendasi},
-                        {key:'ID_SUBFUNGSI', value:GetPicFungsi[i].idSubFungsi}
+                        { key: 'ID_REKOMENDASI', value: idRekomendasi },
+                        { key: 'ID_SUBFUNGSI', value: GetPicFungsi[i].idSubFungsi }
                     ])
                 }
 
-                let dueDateData = [{key:'DueDate', value:dueDate}]
+                let dueDateData = [{ key: 'DueDate', value: dueDate }]
                 let updateDate = await RekomendasiModel.save(dueDateData, where)
 
                 let updateResult = []
@@ -699,68 +821,23 @@ LHAController.editPICfungsiController = async(req, res, next) => {
 
                 if (updatePICFungsi && updateDate.success == true) {
                     let logData = [
-                        {key:'ID_LHA', value:dataLHA.ID_LHA},
-                        {key:'UserId', value:createdBy},
-                        {key:'Activity', value:'Edit PIC Fungsi'},
-                        {key:'AdditionalInfo', value:'Edit PIC Fungsi Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
-                        {key:'Type', value:'New'}
+                        { key: 'ID_LHA', value: dataLHA.ID_LHA },
+                        { key: 'UserId', value: createdBy },
+                        { key: 'Activity', value: 'Edit PIC Fungsi' },
+                        { key: 'AdditionalInfo', value: 'Edit PIC Fungsi Rekomendasi : ' + dataRek.JudulRekomendasi + ', Judul Temuan : ' + dataTemuan.JudulTemuan + '.' },
+                        { key: 'Type', value: 'New' }
                     ]
                     let log = await LogActivityModel.save(logData);
 
                     if (log.success == true) {
-                        statusCode      = 200
-                        responseCode    = '00'
-                        message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
-                        acknowledge     = false
-                        result          = dataFungsi                                   
-                    }                    
+                        statusCode = 200
+                        responseCode = '00'
+                        message = 'Edit PIC Fungsi Rekomendasi Berhasil !'
+                        acknowledge = false
+                        result = dataFungsi
+                    }
                 }
-            }
-        } else {
-            let { picFungsi, dueDate } = req.body
-
-            let GetPicFungsi = JSON.parse(picFungsi)
-
-            let dataFungsi = []
-            for (let i = 0; i < GetPicFungsi.length; i++) {
-                dataFungsi.push([
-                    {key:'ID_REKOMENDASI', value:idRekomendasi},
-                    {key:'ID_SUBFUNGSI', value:GetPicFungsi[i].idSubFungsi}
-                ])
-            }
-
-            let dueDateData = [{key:'DueDate', value:dueDate}]
-            let updateDate = await RekomendasiModel.save(dueDateData, where)
-
-            let updateResult = []
-            for (let x = 0; x < dataFungsi.length; x++) {
-                let update = await FungsiRekomendasiModel.save(dataFungsi[x])
-                updateResult.push(update.success)
-            }
-
-            let updatePICFungsi = updateResult.every(myFunction);
-            function myFunction(value) {
-                return value == true;
-            }
-
-            if (updatePICFungsi && updateDate.success == true) {
-                let logData = [
-                    {key:'ID_LHA', value:dataLHA.ID_LHA},
-                    {key:'UserId', value:createdBy},
-                    {key:'Activity', value:'Edit PIC Fungsi'},
-                    {key:'AdditionalInfo', value:'Edit PIC Fungsi Rekomendasi : '+dataRek.JudulRekomendasi+', Judul Temuan : '+dataTemuan.JudulTemuan+'.'},
-                    {key:'Type', value:'New'}
-                ]
-                let log = await LogActivityModel.save(logData);
-
-                if (log.success == true) {
-                    statusCode      = 200
-                    responseCode    = '00'
-                    message         = 'Edit PIC Fungsi Rekomendasi Berhasil !'
-                    acknowledge     = false
-                    result          = dataFungsi
-                }
-            }
+            }            
         }
 
         // return response
@@ -769,6 +846,55 @@ LHAController.editPICfungsiController = async(req, res, next) => {
         )       
 
     } catch(error) {
+        console.log('Error exception :' + error)
+        let resp = parseResponse(false, null, '99', error)
+        next({
+            resp,
+            status: 500
+        })
+    }
+}
+
+LHAController.editDueDateController = async (req, res, next) => {
+    console.log(`├── ${log} :: Edit PIC Fungsi Rekomendasi Controller`);
+
+    try {
+        let { idRekomendasi, file } = req.body
+        
+        let where = [{key: 'ID_REKOMENDASI', value : idRekomendasi}]
+        let getData = await DueDateModel.getAll('*', where)
+
+        if (getData.length >= 3) {
+            statusCode = 200
+            responseCode = '99'
+            message = 'Pergantian tanggal Due Date sudah mencapai batas maksimal!'
+            acknowledge = false
+            result = null                        
+        } else {
+            let data = [
+                { key:'ID_REKOMENDASI', value: idRekomendasi},
+                { key:'FileDueDate', value: file}
+            ]
+
+            let saveDueDate = await DueDateModel.save(data)
+
+            if (saveDueDate.success == true) {
+                let getNew = await DueDateModel.getAll('*', where)
+
+                statusCode = 200
+                responseCode = '00'
+                message = 'Delete LHA Controller Success!'
+                acknowledge = true
+                result = getNew
+            }
+        }
+
+        // return response
+        res.status(statusCode).send(
+            parseResponse(acknowledge, result, responseCode, message)
+        )
+
+    } catch (error) {
         console.log('Error exception :' + error)
         let resp = parseResponse(false, null, '99', error)
         next({

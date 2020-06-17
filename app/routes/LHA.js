@@ -12,9 +12,11 @@ router
     .post('/temuanRekomendasi', LHAController.getTemuanController)
     .post('/getTemuanByID', LHAController.getTemuanbyIDController)
     .post('/getRekomendasiByID', LHAController.getRekomendasibyIDController)
+    .post('/getRekomendasiByIDLHA', LHAController.getRekomendasibyIDLHAController)
     .post('/rekomendasi', LHAController.getRekomendasiController)
     .post('/search', LHAController.searchLHAController)
-    .post('/editFungsiRekomendasi', LHAController.editPICfungsiController)
+    .post('/editRekomendasi', LHAController.editRekomendasiController)
+    .post('/editDueDate', LHAController.editDueDateController)
     .post('/logActivity', LogActivityController.getLogActivity)
     .post('/deleteLHA', LHAController.deleteLHAController)
 
