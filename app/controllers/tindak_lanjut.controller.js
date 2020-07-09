@@ -56,25 +56,6 @@ TLController.auditeeTLController = async(req, res, next) => {
             if (checkTL.length > 0) {
  
                 let {catatanAuditee, filename } = req.body
-
-                // let filename =[]
-                // if (req.files == null) {
-                //     filename.push(checkTL[0].DokumenTL)
-                // } else {                   
-                //     sampleFile = req.files.dokumenTL;
-                //     filename.push('TL_'+sampleFile.name)
-                //     uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
-                    
-                //     sampleFile.mv(uploadPath, function(err) {
-                //         if (err) {
-                //             statusCode      = 200
-                //             responseCode    = '41'
-                //             message         = 'Upload dokumen gagal !'
-                //             acknowledge     = false
-                //             result          = null        
-                //         }
-                //     });
-                // }
                 
                 let dataTL = [
                     { key:'ID_RF', value:idRF},
@@ -108,25 +89,6 @@ TLController.auditeeTLController = async(req, res, next) => {
             } else {
                 let { catatanAuditee, filename, createdBy } = req.body
 
-                // let filename = []
-                // if (req.files == null) {
-                    
-                // } else {                    
-                //     sampleFile = req.files.dokumenTL;
-                //     filename.push('TL_'+sampleFile.name)
-                //     uploadPath = __dirname+'./../public/Dokumen TL/TL_'+sampleFile.name; 
-                    
-                //     sampleFile.mv(uploadPath, function(err) {
-                //         if (err) {
-                //             statusCode      = 200
-                //             responseCode    = '41'
-                //             message         = 'Upload dokumen gagal !'
-                //             acknowledge     = false
-                //             result          = null        
-                //         }
-                //     });
-                // }
-        
                     let dataTL = [
                         { key:'ID_RF', value:idRF},
                         { key:'DokumenTL', value: filename },

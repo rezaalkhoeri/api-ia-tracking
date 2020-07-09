@@ -723,7 +723,7 @@ LHAController.editRekomendasiController = async(req, res, next) => {
     console.log(`├── ${log} :: Edit PIC Fungsi Rekomendasi Controller`);
 
     try{
-        let { idRekomendasi, judulRekomendasi, buktiTL, dueDate } = req.body
+        let { idRekomendasi, judulTemuan, judulRekomendasi, buktiTL, dueDate } = req.body
 
         let whereR = [{key:'ID_REKOMENDASI', value:idRekomendasi}]
         let dataRek = await RekomendasiModel.getBy('*', whereR)
@@ -739,10 +739,15 @@ LHAController.editRekomendasiController = async(req, res, next) => {
             { key: 'BuktiTindakLanjut', value: buktiTL},
             { key: 'DueDate', value: dueDate }
         ]
+
+        let dataEditTemuan = [
+            { key: 'JudulTemuan', value: judulTemuan },
+        ]
         
-        let updateDate = await RekomendasiModel.save(dataEdit, where)
+        let updateTemuan = await TemuanModel.save(dataEditTemuan, whereT)
+        let updateRekomendasi = await RekomendasiModel.save(dataEdit, where)
         
-        if (updateDate.success == true) {
+        if (updateRekomendasi.success == true && updateTemuan.success == true) {
             let checkID = await FungsiRekomendasiModel.getAll('*', where)
             if (checkID.length > 0) {
                 let deleteOldPIC = await FungsiRekomendasiModel.delete(where)
@@ -771,7 +776,7 @@ LHAController.editRekomendasiController = async(req, res, next) => {
                         return value == true;
                     }
 
-                    if (updatePICFungsi && updateDate.success == true) {
+                    if (updatePICFungsi == true && updateRekomendasi.success == true) {
                         let rekBaru = await RekomendasiModel.getAll('*', where)
 
                         let logData = [

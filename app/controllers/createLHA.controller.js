@@ -590,10 +590,15 @@ CreateLHAController.SaveLHAController = async (req, res, next) => {
                         { key: 'DokumenAudit', value: filename },
                         { key: 'TanggalLHA', value: tglLHA },
                         { key: 'TipeLHA', value: tipeLHA },
-                        { key: 'StatusLHA', value: 'A0' },
                         { key: 'CreatedBy', value: req.currentUser.body.userid },
                     ]
 
+                    if (check[0].StatusLHA == 'A0') {
+                        dataLHA.push({ key: 'StatusLHA', value: 'A0' })
+                    } else {
+                        dataLHA.push({ key: 'StatusLHA', value: check[0].StatusLHA })
+                    }
+                
                     let updateLHA = await LHAModel.save(dataLHA, condition);
 
                     if (updateLHA.success == true) {
@@ -717,9 +722,15 @@ CreateLHAController.SaveTemuanController = async (req, res, next) => {
                         { key: 'JudulTemuan', value: getTemuan[i].judulTemuan },
                         { key: 'IndikasiBernilaiUang', value: getTemuan[i].indikasi },
                         { key: 'Nominal', value: getTemuan[i].nominal },
-                        { key: 'StatusTemuan', value: 'A0' },
                         { key: 'CreatedBy', value: req.currentUser.body.userid },
                     ]
+
+                    if (check[0].StatusTemuan == 'A0') {
+                        dataTemuan.push({ key: 'StatusTemuan', value: 'A0' })
+                    } else {
+                        dataTemuan.push({ key: 'StatusTemuan', value: check[0].StatusTemuan })
+                    }
+                    
                     let updateTemuan = await TemuanModel.save(dataTemuan,where);
                     temuanRes.push(updateTemuan.success)
                 } else {
